@@ -51,7 +51,11 @@ export default function EscolherLogin({ navigation }) {
       />
 
       {/* Botão avançar */}
-      <TouchableOpacity style={styles.botaoAvancar} activeOpacity={0.85}>
+      <TouchableOpacity
+        style={styles.botaoAvancar}
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('Entrar')}
+      >
         <Text style={styles.textoAvancar}>Avançar</Text>
       </TouchableOpacity>
 
@@ -59,22 +63,38 @@ export default function EscolherLogin({ navigation }) {
       <View style={styles.divisor} />
 
       {/* Botões de login social */}
-      <TouchableOpacity style={styles.botaoSocial} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.botaoSocial}
+        activeOpacity={0.7}
+        onPress={() => navigation.navigate('Google')}
+      >
         <Image source={require('../../assets/google.png')} style={styles.iconeSocial} />
         <Text style={styles.textoSocial}>Inscrever-se com Google</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.botaoSocial} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.botaoSocial}
+        activeOpacity={0.7}
+        onPress={() => navigation.navigate('Facebook')}
+      >
         <Image source={require('../../assets/facebook.png')} style={styles.iconeSocial} />
         <Text style={styles.textoSocial}>Inscrever-se com Facebook</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.botaoSocial} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.botaoSocial}
+        activeOpacity={0.7}
+        onPress={() => navigation.navigate('Apple')}
+      >
         <Image source={require('../../assets/apple.png')} style={styles.iconeSocial} />
         <Text style={styles.textoSocial}>Inscrever-se com Apple</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.botaoSocial} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.botaoSocial}
+        activeOpacity={0.7}
+        onPress={() => navigation.navigate('Telefone')}
+      >
         <Text style={[styles.textoSocial, styles.textoTelefone]}>
           Inscrever-se com seu{'\n'}número de telefone
         </Text>
