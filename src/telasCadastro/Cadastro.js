@@ -23,15 +23,17 @@ const COLORS = {
   error: '#FF5252',
 };
 
-export default function Entrar({ navigation }) {
+export default function Cadastro({ navigation }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
 
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
 
   const [erro, setErro] = useState('');
 
-  const fazerLogin = () => {
+  const validarCadastro = () => {
     if (!email.includes('@') || !email.includes('.')) {
       setErro('Insira um e-mail válido.');
       return;
@@ -42,10 +44,15 @@ export default function Entrar({ navigation }) {
       return;
     }
 
+    if (senha !== confirmarSenha) {
+      setErro('As senhas não são iguais.');
+      return;
+    }
+
     setErro('');
 
-    // Por enquanto não existe API ou banco.
-    // Depois podemos colocar o login real aqui.
+    // Por enquanto não existe banco/API.
+    // Depois podemos colocar o cadastro real aqui.
 
     navigation.navigate('TreinoHub');
   };
@@ -56,7 +63,6 @@ export default function Entrar({ navigation }) {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-
         {/* LOGO */}
         <Image
           source={require('../../assets/FundoPretoRestoBranco.jpeg')}
@@ -65,12 +71,10 @@ export default function Entrar({ navigation }) {
         />
 
         {/* TÍTULO */}
-        <Text style={styles.title}>
-          Bem-vindo de volta!
-        </Text>
+        <Text style={styles.title}>Crie sua conta</Text>
 
         <Text style={styles.subtitle}>
-          Entre na sua conta do Gymvance
+          Comece sua jornada com o Gymvance
         </Text>
 
         {/* E-MAIL */}
@@ -117,8 +121,40 @@ export default function Entrar({ navigation }) {
             onPress={() => setMostrarSenha(!mostrarSenha)}
           >
             <Ionicons
+              name={mostrarSenha ? 'eye-outline' : 'eye-off-outline'}
+              size={22}
+              color={COLORS.muted}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* CONFIRMAR SENHA */}
+        <View style={styles.inputContainer}>
+          <Ionicons
+            name="lock-closed-outline"
+            size={22}
+            color={COLORS.muted}
+            style={styles.inputIcon}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Confirmar senha"
+            placeholderTextColor={COLORS.muted}
+            value={confirmarSenha}
+            onChangeText={setConfirmarSenha}
+            secureTextEntry={!mostrarConfirmarSenha}
+            autoCapitalize="none"
+          />
+
+          <TouchableOpacity
+            onPress={() =>
+              setMostrarConfirmarSenha(!mostrarConfirmarSenha)
+            }
+          >
+            <Ionicons
               name={
-                mostrarSenha
+                mostrarConfirmarSenha
                   ? 'eye-outline'
                   : 'eye-off-outline'
               }
@@ -128,15 +164,6 @@ export default function Entrar({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ESQUECI A SENHA */}
-        <TouchableOpacity
-          style={styles.forgotContainer}
-        >
-          <Text style={styles.forgotText}>
-            Esqueci minha senha
-          </Text>
-        </TouchableOpacity>
-
         {/* ERRO */}
         {erro !== '' && (
           <Text style={styles.error}>
@@ -144,13 +171,13 @@ export default function Entrar({ navigation }) {
           </Text>
         )}
 
-        {/* BOTÃO ENTRAR */}
+        {/* BOTÃO CRIAR CONTA */}
         <TouchableOpacity
           style={styles.button}
-          onPress={fazerLogin}
+          onPress={validarCadastro}
         >
           <Text style={styles.buttonText}>
-            Entrar
+            Criar conta
           </Text>
         </TouchableOpacity>
 
@@ -217,21 +244,20 @@ export default function Entrar({ navigation }) {
           </Text>
         </TouchableOpacity>
 
-        {/* CADASTRO */}
-        <View style={styles.registerContainer}>
-          <Text style={styles.registerText}>
-            Ainda não tem uma conta?
+        {/* ENTRAR */}
+        <View style={styles.loginContainer}>
+          <Text style={styles.loginText}>
+            Já tem uma conta?
           </Text>
 
           <TouchableOpacity
-            onPress={() => navigation.navigate('Cadastro')}
+            onPress={() => navigation.navigate('Entrar')}
           >
-            <Text style={styles.registerLink}>
-              Criar conta
+            <Text style={styles.loginLink}>
+              Entrar
             </Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -261,7 +287,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     marginTop: 5,
-    textAlign: 'center',
   },
 
   subtitle: {
@@ -293,17 +318,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: COLORS.text,
     fontSize: 16,
-  },
-
-  forgotContainer: {
-    width: '100%',
-    alignItems: 'flex-end',
-    marginBottom: 15,
-  },
-
-  forgotText: {
-    color: COLORS.green,
-    fontSize: 14,
   },
 
   error: {
@@ -369,18 +383,18 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
 
-  registerContainer: {
+  loginContainer: {
     flexDirection: 'row',
     marginTop: 15,
     marginBottom: 20,
   },
 
-  registerText: {
+  loginText: {
     color: COLORS.muted,
     fontSize: 14,
   },
 
-  registerLink: {
+  loginLink: {
     color: COLORS.green,
     fontSize: 14,
     fontWeight: '700',

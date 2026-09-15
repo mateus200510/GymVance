@@ -1,22 +1,48 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, { useEffect } from 'react';
 
-import EscolherLogin from './src/telasLogin/escolherLogin';
+import {
+  View,
+  Image,
+  StyleSheet,
+} from 'react-native';
+
+import {
+  NavigationContainer,
+} from '@react-navigation/native';
+
+import {
+  createNativeStackNavigator,
+} from '@react-navigation/native-stack';
+
+import Cadastro from './src/telasCadastro/Cadastro';
 import Entrar from './src/telasLogin/Entrar';
-import Google from './src/telasLogin/Google';
-import Facebook from './src/telasLogin/Facebook';
-import Apple from './src/telasLogin/Apple';
-import Telefone from './src/telasLogin/Telefone';
-import Email from './src/telasLogin/Email';
+
+import TreinoHub from './src/telasTreino/TreinoHub';
+import PlanoSemanal from './src/telasTreino/PlanoSemanal';
+import SessaoExercicios from './src/telasTreino/SessaoExercicios';
+import NovaSessao from './src/telasTreino/NovaSessao';
+import CalendarioMensal from './src/telasTreino/CalendarioMensal';
+import NovaSessaoComExercicio from './src/telasTreino/NovaSessaoComExercicio';
+import SessaoAtiva from './src/telasTreino/SessaoAtiva';
 
 const Stack = createNativeStackNavigator();
 
-function HomeScreen() {
+function SplashScreen({ navigation }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.replace('Cadastro');
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [navigation]);
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#121212', alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>Home</Text>
+    <View style={styles.splash}>
+      <Image
+        source={require('./assets/FundoPretoRestoBranco.jpeg')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -25,19 +51,80 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="EscolherLogin"
-        screenOptions={{ headerShown: false }}
+        initialRouteName="Splash"
+        screenOptions={{
+          headerShown: false,
+        }}
       >
-        <Stack.Screen name="EscolherLogin" component={EscolherLogin} />
-        <Stack.Screen name="Entrar" component={Entrar} />
-        <Stack.Screen name="Google" component={Google} />
-        <Stack.Screen name="Facebook" component={Facebook} />
-        <Stack.Screen name="Apple" component={Apple} />
-        <Stack.Screen name="Telefone" component={Telefone} />
-        <Stack.Screen name="Email" component={Email} />
-        <Stack.Screen name="Cadastro" component={EscolherLogin} />
-        <Stack.Screen name="Home" component={HomeScreen} />
+
+        {/* TELA INICIAL */}
+        <Stack.Screen
+          name="Splash"
+          component={SplashScreen}
+        />
+
+        {/* LOGIN / CADASTRO */}
+        <Stack.Screen
+          name="Cadastro"
+          component={Cadastro}
+        />
+
+        <Stack.Screen
+          name="Entrar"
+          component={Entrar}
+        />
+
+        {/* TELAS DE TREINO */}
+        <Stack.Screen
+          name="TreinoHub"
+          component={TreinoHub}
+        />
+
+        <Stack.Screen
+          name="PlanoSemanal"
+          component={PlanoSemanal}
+        />
+
+        <Stack.Screen
+          name="SessaoExercicios"
+          component={SessaoExercicios}
+        />
+
+        <Stack.Screen
+          name="NovaSessao"
+          component={NovaSessao}
+        />
+
+        <Stack.Screen
+          name="CalendarioMensal"
+          component={CalendarioMensal}
+        />
+
+        <Stack.Screen
+          name="NovaSessaoComExercicio"
+          component={NovaSessaoComExercicio}
+        />
+
+        <Stack.Screen
+          name="SessaoAtiva"
+          component={SessaoAtiva}
+        />
+
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  splash: {
+    flex: 1,
+    backgroundColor: '#121212',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  logo: {
+    width: 250,
+    height: 250,
+  },
+});
