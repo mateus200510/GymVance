@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', laranja: '#FF7A1A' };
 
@@ -15,8 +16,10 @@ const SEMANA = [
 ];
 
 export default function TreinoHub({ navigation }) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { paddingBottom: 92 + insets.bottom }]}>
       <View style={styles.header}>
         <View style={styles.streak}>
           <Ionicons name="flame" size={18} color={COLORS.laranja} />
@@ -29,6 +32,12 @@ export default function TreinoHub({ navigation }) {
             <Text style={styles.userNome}>Lucas Miyashiro</Text>
           </View>
         </View>
+        <TouchableOpacity
+          style={styles.proChip}
+          onPress={() => navigation?.navigate('Planos')}
+        >
+          <Text style={styles.proChipText}>PRO</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.semanaRow}>
@@ -42,7 +51,7 @@ export default function TreinoHub({ navigation }) {
 
       <Text style={styles.sessaoTitulo}>Sessão de Treino</Text>
 
-      <TouchableOpacity style={styles.btnIniciar}>
+      <TouchableOpacity style={styles.btnIniciar} onPress={() => navigation?.navigate('SessaoAtiva')}>
         <Text style={styles.btnIniciarText}>Iniciar treino</Text>
       </TouchableOpacity>
 
@@ -51,24 +60,28 @@ export default function TreinoHub({ navigation }) {
         <Text style={styles.btnCriarText}>Criar sessão de treino</Text>
       </TouchableOpacity>
 
-      <BottomNav active="Treino" />
+      <BottomNav navigation={navigation} active="Treino" insets={insets} />
     </SafeAreaView>
   );
 }
 
-function BottomNav({ active }) {
+function BottomNav({ active, navigation, insets }) {
   const itens = [
-    { nome: 'Treino', icon: 'barbell-outline' },
-    { nome: 'Alimentação', icon: 'heart-outline' },
-    { nome: 'Relógio', icon: 'watch-outline' },
+    { nome: 'Treino', icon: 'barbell-outline', screen: 'TreinoHub' },
+    { nome: 'Alimentação', icon: 'heart-outline', screen: 'Alimentacao' },
+    { nome: 'Relógio', icon: 'watch-outline', screen: 'Batimento' },
   ];
   return (
-    <View style={styles.bottomNav}>
+    <View style={[styles.bottomNav, { paddingBottom: (insets?.bottom ?? 0) + 10 }]}>
       {itens.map((it) => (
-        <View key={it.nome} style={styles.navItem}>
+        <TouchableOpacity
+          key={it.nome}
+          style={styles.navItem}
+          onPress={() => navigation?.navigate(it.screen)}
+        >
           <Ionicons name={it.icon} size={20} color={it.nome === active ? COLORS.green : COLORS.muted} />
           <Text style={[styles.navLabel, it.nome === active && { color: COLORS.green }]}>{it.nome}</Text>
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );
@@ -79,7 +92,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
   streak: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   streakTexto: { color: COLORS.text, fontWeight: '700' },
-  userBox: { marginLeft: 8 },
+  userBox: { marginLeft: 8, flex: 1 },
+  proChip: { backgroundColor: COLORS.green, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6 },
+  proChipText: { color: '#000', fontWeight: '800', fontSize: 11 },
   tituloSecundario: { color: COLORS.muted, fontSize: 11 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   avatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#333' },
@@ -93,7 +108,7 @@ const styles = StyleSheet.create({
   btnIniciarText: { color: COLORS.text, fontWeight: '700' },
   btnCriar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 14, borderRadius: 12 },
   btnCriarText: { color: '#000', fontWeight: '700' },
-  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingVertical: 10, position: 'absolute', bottom: 0, left: 0, right: 0 },
+  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingTop: 10, position: 'absolute', bottom: 0, left: 0, right: 0 },
   navItem: { alignItems: 'center', gap: 2 },
   navLabel: { color: COLORS.muted, fontSize: 11 },
 });

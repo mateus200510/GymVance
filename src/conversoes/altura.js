@@ -68,7 +68,7 @@ export default function AlturaScreen({ navigation }) {
 
       <TouchableOpacity
         style={styles.advanceButton}
-        onPress={() => navigation.navigate('ProximaEtapa')}
+        onPress={() => navigation.replace('TreinoHub')}
       >
         <Text style={styles.advanceText}>Avançar</Text>
       </TouchableOpacity>

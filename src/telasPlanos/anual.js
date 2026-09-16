@@ -6,14 +6,26 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+import { saveSelectedPlan } from '../services/storage';
 
 export default function Anual({ navigation }) {
   const [planoSelecionado, setPlanoSelecionado] = useState('anual');
 
-  const handleAssinar = () => {
-    navigation.navigate('Checkout', { plano: planoSelecionado });
+  const handleAssinar = async () => {
+    try {
+      await saveSelectedPlan(planoSelecionado);
+      Alert.alert(
+        'Plano PRO ativado',
+        `Seu plano ${planoSelecionado} foi selecionado com sucesso.`,
+        [{ text: 'OK', onPress: () => navigation.navigate('TreinoHub') }]
+      );
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível ativar o plano no momento.');
+    }
   };
 
   return (

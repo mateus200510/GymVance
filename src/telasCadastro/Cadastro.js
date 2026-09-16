@@ -54,7 +54,7 @@ export default function Cadastro({ navigation }) {
     // Por enquanto não existe banco/API.
     // Depois podemos colocar o cadastro real aqui.
 
-    navigation.navigate('TreinoHub');
+    navigation.replace('Peso');
   };
 
   return (

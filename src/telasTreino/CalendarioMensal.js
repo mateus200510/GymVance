@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A' };
 
@@ -19,8 +20,10 @@ const DIAS_TREINO = [1, 3, 6, 8, 9, 14, 15, 16, 20, 21, 22, 23];
 const FORA_DO_MES = [27, 28, 29, 30];
 
 export default function CalendarioMensal({ navigation }) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
       <TouchableOpacity onPress={() => navigation?.goBack()}>
         <Ionicons name="chevron-back" size={22} color={COLORS.green} />
       </TouchableOpacity>
@@ -56,24 +59,28 @@ export default function CalendarioMensal({ navigation }) {
         <Text style={styles.btnCriarSemanaText}>Criar semana de treino</Text>
       </TouchableOpacity>
 
-      <BottomNav active="Treino" />
+      <BottomNav navigation={navigation} active="Treino" insets={insets} />
     </SafeAreaView>
   );
 }
 
-function BottomNav({ active }) {
+function BottomNav({ active, navigation, insets }) {
   const itens = [
-    { nome: 'Treino', icon: 'barbell-outline' },
-    { nome: 'Alimentação', icon: 'heart-outline' },
-    { nome: 'Relógio', icon: 'watch-outline' },
+    { nome: 'Treino', icon: 'barbell-outline', screen: 'TreinoHub' },
+    { nome: 'Alimentação', icon: 'heart-outline', screen: 'Alimentacao' },
+    { nome: 'Relógio', icon: 'watch-outline', screen: 'Batimento' },
   ];
   return (
-    <View style={styles.bottomNav}>
+    <View style={[styles.bottomNav, { paddingBottom: (insets?.bottom ?? 0) + 10 }]}>
       {itens.map((it) => (
-        <View key={it.nome} style={styles.navItem}>
+        <TouchableOpacity
+          key={it.nome}
+          style={styles.navItem}
+          onPress={() => navigation?.navigate(it.screen)}
+        >
           <Ionicons name={it.icon} size={20} color={it.nome === active ? COLORS.green : COLORS.muted} />
           <Text style={[styles.navLabel, it.nome === active && { color: COLORS.green }]}>{it.nome}</Text>
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );
@@ -91,7 +98,7 @@ const styles = StyleSheet.create({
   diaNumero: { color: COLORS.text, fontSize: 12, fontWeight: '600' },
   btnCriarSemana: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 14, borderRadius: 12, marginBottom: 12 },
   btnCriarSemanaText: { color: '#000', fontWeight: '700' },
-  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingVertical: 10 },
+  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingTop: 10 },
   navItem: { alignItems: 'center', gap: 2 },
   navLabel: { color: COLORS.muted, fontSize: 11 },
 });

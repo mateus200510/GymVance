@@ -1,12 +1,15 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', red: '#E5484D', text: '#FFFFFF', muted: '#8A8A8A', inputBg: '#2A2A2A' };
 
-export default function SessaoExercicios() {
+export default function SessaoExercicios({ navigation }) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.card}>
           <View style={styles.linhaReservas}>
@@ -40,7 +43,7 @@ export default function SessaoExercicios() {
         </View>
       </ScrollView>
 
-      <BottomNav active="Treino" />
+      <BottomNav navigation={navigation} active="Treino" />
     </SafeAreaView>
   );
 }
@@ -66,19 +69,23 @@ function LinhaSerie({ numero, kg, reps, concluido, falhou }) {
   );
 }
 
-function BottomNav({ active }) {
+function BottomNav({ active, navigation }) {
   const itens = [
-    { nome: 'Treino', icon: 'barbell-outline' },
-    { nome: 'Alimentação', icon: 'heart-outline' },
-    { nome: 'Relógio', icon: 'watch-outline' },
+    { nome: 'Treino', icon: 'barbell-outline', screen: 'TreinoHub' },
+    { nome: 'Alimentação', icon: 'heart-outline', screen: 'Alimentacao' },
+    { nome: 'Relógio', icon: 'watch-outline', screen: 'Batimento' },
   ];
   return (
-    <View style={styles.bottomNav}>
+    <View style={[styles.bottomNav, { paddingBottom: (insets?.bottom ?? 0) + 10 }]}>
       {itens.map((it) => (
-        <View key={it.nome} style={styles.navItem}>
+        <TouchableOpacity
+          key={it.nome}
+          style={styles.navItem}
+          onPress={() => navigation?.navigate(it.screen)}
+        >
           <Ionicons name={it.icon} size={20} color={it.nome === active ? COLORS.green : COLORS.muted} />
           <Text style={[styles.navLabel, it.nome === active && { color: COLORS.green }]}>{it.nome}</Text>
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );
@@ -103,7 +110,7 @@ const styles = StyleSheet.create({
   circuloRed: { backgroundColor: COLORS.red },
   notaTexto: { color: COLORS.muted, fontSize: 12, marginBottom: 8 },
   notaInput: { backgroundColor: COLORS.inputBg, color: COLORS.text, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, fontSize: 12, marginTop: 6 },
-  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingVertical: 10 },
+  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingTop: 10 },
   navItem: { alignItems: 'center', gap: 2 },
   navLabel: { color: COLORS.muted, fontSize: 11 },
 });

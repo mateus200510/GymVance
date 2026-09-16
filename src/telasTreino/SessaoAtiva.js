@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView,
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Accelerometer } from 'expo-sensors';
+
+import { saveWorkoutHistory } from '../services/storage';
 
 const COLORS = {
   bg: '#121212',
@@ -15,11 +19,32 @@ const COLORS = {
 };
 
 export default function SessaoAtiva({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [series, setSeries] = useState([
     { id: 1, kg: '80', reps: '8', concluido: true, falhou: false, nota: '2 séries reservas' },
     { id: 2, kg: '100', reps: '5', concluido: false, falhou: true, nota: '' },
   ]);
   const [tempo] = useState('00:15:42');
+  const [instabilidade, setInstabilidade] = useState('');
+  const [ultimaAceleracao, setUltimaAceleracao] = useState({ x: 0, y: 0, z: 0 });
+
+  useEffect(() => {
+    let subscription;
+
+    try {
+      subscription = Accelerometer.addListener((data) => {
+        setUltimaAceleracao(data);
+      });
+    } catch (error) {
+      console.warn('Acelerômetro indisponível:', error);
+    }
+
+    return () => {
+      if (subscription) {
+        subscription.remove();
+      }
+    };
+  }, []);
 
   const toggleConcluido = (id) => {
     setSeries((prev) =>
@@ -34,8 +59,38 @@ export default function SessaoAtiva({ navigation }) {
     ]);
   };
 
+  const handleConcluir = async () => {
+    const magnitude = Math.sqrt(
+      ultimaAceleracao.x ** 2 +
+      ultimaAceleracao.y ** 2 +
+      ultimaAceleracao.z ** 2
+    );
+
+    if (Number.isFinite(magnitude) && magnitude > 2.0) {
+      setInstabilidade('Instabilidade Física Detectada');
+      Alert.alert('Instabilidade Física Detectada');
+      return;
+    }
+
+    try {
+      const treino = {
+        treino: 'Sessão Ativa',
+        data: new Date().toISOString(),
+        duracao: tempo,
+        exercicios: series,
+      };
+
+      await saveWorkoutHistory(treino);
+      Alert.alert('Treino concluído', 'Seu treino foi salvo no histórico local.');
+      navigation?.navigate('TreinoHub');
+    } catch (error) {
+      console.warn('Erro ao salvar treino:', error);
+      Alert.alert('Erro', 'Não foi possível salvar o treino localmente.');
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation?.goBack()}>
           <Ionicons name="chevron-back" size={26} color={COLORS.text} />
@@ -43,7 +98,7 @@ export default function SessaoAtiva({ navigation }) {
         <View style={styles.timerPill}>
           <Text style={styles.timerText}>{tempo}</Text>
         </View>
-        <TouchableOpacity style={styles.concluirBtn}>
+        <TouchableOpacity style={styles.concluirBtn} onPress={handleConcluir}>
           <Text style={styles.concluirBtnText}>Concluir</Text>
         </TouchableOpacity>
       </View>
@@ -51,6 +106,10 @@ export default function SessaoAtiva({ navigation }) {
       <View style={styles.sessaoAtivaTag}>
         <Text style={styles.sessaoAtivaTagText}>SESSÃO ATIVA</Text>
       </View>
+
+      {instabilidade !== '' && (
+        <Text style={styles.instabilidadeTexto}>{instabilidade}</Text>
+      )}
 
       <Text style={styles.titulo}>Evolução Diária</Text>
 
@@ -125,21 +184,25 @@ export default function SessaoAtiva({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <BottomNav active="Treino" />
+      <BottomNav navigation={navigation} active="Treino" insets={insets} />
     </SafeAreaView>
   );
 }
 
-function BottomNav({ active }) {
+function BottomNav({ active, navigation, insets }) {
   const itens = [
-    { nome: 'Treino', icon: 'barbell-outline' },
-    { nome: 'Alimentação', icon: 'heart-outline' },
-    { nome: 'Relógio', icon: 'watch-outline' },
+    { nome: 'Treino', icon: 'barbell-outline', screen: 'TreinoHub' },
+    { nome: 'Alimentação', icon: 'heart-outline', screen: 'Alimentacao' },
+    { nome: 'Relógio', icon: 'watch-outline', screen: 'Batimento' },
   ];
   return (
-    <View style={styles.bottomNav}>
+    <View style={[styles.bottomNav, { paddingBottom: (insets?.bottom ?? 0) + 10 }]}>
       {itens.map((it) => (
-        <View key={it.nome} style={styles.navItem}>
+        <TouchableOpacity
+          key={it.nome}
+          style={styles.navItem}
+          onPress={() => navigation?.navigate(it.screen)}
+        >
           <Ionicons
             name={it.icon}
             size={20}
@@ -148,7 +211,7 @@ function BottomNav({ active }) {
           <Text style={[styles.navLabel, it.nome === active && { color: COLORS.green }]}>
             {it.nome}
           </Text>
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );
@@ -163,6 +226,7 @@ const styles = StyleSheet.create({
   concluirBtnText: { color: '#000', fontWeight: '700' },
   sessaoAtivaTag: { marginTop: 16 },
   sessaoAtivaTagText: { color: COLORS.red, fontWeight: '700', fontSize: 12, letterSpacing: 1 },
+  instabilidadeTexto: { color: COLORS.red, fontWeight: '700', fontSize: 12, marginTop: 8 },
   titulo: { color: COLORS.text, fontSize: 24, fontWeight: '700', marginTop: 4, marginBottom: 16 },
   card: { backgroundColor: COLORS.card, borderRadius: 16, padding: 14 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
@@ -187,7 +251,7 @@ const styles = StyleSheet.create({
   btnExercicio: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 12, borderRadius: 12 },
   btnExercicioText: { color: '#000', fontWeight: '700' },
   btnDescartarTreino: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.card, paddingVertical: 12, borderRadius: 12 },
-  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingVertical: 10 },
+  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingTop: 10 },
   navItem: { alignItems: 'center', gap: 2 },
   navLabel: { color: COLORS.muted, fontSize: 11 },
 });

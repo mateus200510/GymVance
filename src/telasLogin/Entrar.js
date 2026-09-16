@@ -47,7 +47,7 @@ export default function Entrar({ navigation }) {
     // Por enquanto não existe API ou banco.
     // Depois podemos colocar o login real aqui.
 
-    navigation.navigate('TreinoHub');
+    navigation.replace('Peso');
   };
 
   return (

@@ -1,0 +1,378 @@
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  SafeAreaView,
+  Alert,
+  Linking,
+  Image,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+
+const DIAS_SEMANA = [
+  { label: 'Seg', data: 20 },
+  { label: 'Ter', data: 21 },
+  { label: 'Qua', data: 22 },
+  { label: 'Qui', data: 23 },
+  { label: 'Sex', data: 24 },
+  { label: 'Sab', data: 25 },
+  { label: 'Dom', data: 26 },
+];
+
+const REFEICOES = [
+  { id: '1', nome: 'Café da manhã', descricao: 'Ovos mexidos, torrada integral, café com leite', kcal: 320 },
+  { id: '2', nome: 'Almoço', descricao: 'Peito de frango, arroz integral, brócolis', kcal: 650 },
+  { id: '3', nome: 'Lanche da tarde', descricao: 'Iogurte grego desnatado, banana, aveia', kcal: 250 },
+  { id: '4', nome: 'Jantar', descricao: 'Filé de salmão, purê de batata doce', kcal: 630 },
+];
+
+const MACROS = [
+  { label: 'PROTEÍNAS', atual: 135, meta: 180, unidade: 'g' },
+  { label: 'CARBOIDRATOS', atual: 180, meta: 240, unidade: 'g' },
+  { label: 'GORDURAS', atual: 48, meta: 70, unidade: 'g' },
+];
+
+const KCAL_ATUAL = 1650;
+const KCAL_META = 2230;
+
+// Fotos das refeições agrupadas por data — vazias, sem imagens aleatórias.
+const FOTOS_REFEICOES = [
+  { data: 'Segunda-feira, 22 out.', fotos: [null, null, null, null] },
+  { data: 'Domingo, 21 de out.', fotos: [null] },
+];
+
+function BarraProgresso({ percentual, cor = '#3DDC5C' }) {
+  return (
+    <View style={styles.barraFundo}>
+      <View style={[styles.barraPreenchida, { width: `${percentual}%`, backgroundColor: cor }]} />
+    </View>
+  );
+}
+
+function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada }) {
+  const percentualKcal = Math.min(100, Math.round((KCAL_ATUAL / KCAL_META) * 100));
+  const [pergunta, setPergunta] = useState('');
+
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.perfilIcone}>
+          <Feather name="user" size={20} color="#8E8E93" />
+        </View>
+        <Text style={styles.headerNome}>Nome</Text>
+        <View style={styles.headerDireita}>
+          <Text style={styles.logo}>Gymvance</Text>
+          <TouchableOpacity onPress={onAbrirCamera} style={{ marginLeft: 12 }}>
+            <Feather name="camera" size={20} color="#8E8E93" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onAbrirGaleria} style={{ marginLeft: 12 }}>
+            <Feather name="image" size={20} color="#8E8E93" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {fotoCapturada ? (
+        <View style={styles.fotoCapturadaWrapper}>
+          <Image source={{ uri: fotoCapturada }} style={styles.fotoCapturada} />
+        </View>
+      ) : null}
+
+      {/* Seletor de dias */}
+      <View style={styles.diasRow}>
+        {DIAS_SEMANA.map((dia) => {
+          const selecionado = dia.label === 'Qui';
+          return (
+            <View key={dia.label} style={styles.diaItem}>
+              <Text style={styles.diaLabel}>{dia.label}</Text>
+              <View style={[styles.diaCirculo, selecionado && styles.diaCirculoAtivo]}>
+                <Text style={[styles.diaNumero, selecionado && styles.diaNumeroAtivo]}>
+                  {dia.data}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* Consumo diário */}
+      <View style={styles.card}>
+        <View style={styles.cardHeaderRow}>
+          <Text style={styles.cardTitulo}>Consumo Diário</Text>
+          <Text style={styles.cardPercentual}>{percentualKcal}%</Text>
+        </View>
+        <Text style={styles.kcalTexto}>
+          {KCAL_ATUAL} <Text style={styles.kcalMeta}>/ {KCAL_META} kcal</Text>
+        </Text>
+        <BarraProgresso percentual={percentualKcal} />
+
+        <View style={styles.macrosRow}>
+          {MACROS.map((macro) => (
+            <View key={macro.label} style={styles.macroItem}>
+              <Text style={styles.macroLabel}>{macro.label}</Text>
+              <Text style={styles.macroValor}>
+                {macro.atual}
+                {macro.unidade}
+                <Text style={styles.macroMeta}> /{macro.meta}{macro.unidade}</Text>
+              </Text>
+              <BarraProgresso percentual={(macro.atual / macro.meta) * 100} />
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Refeições de hoje */}
+      <View style={styles.secaoHeaderRow}>
+        <Text style={styles.secaoTitulo}>Refeições de hoje</Text>
+        <TouchableOpacity style={styles.botaoAdicionar}>
+          <Feather name="plus" size={14} color="#000" />
+          <Text style={styles.botaoAdicionarTexto}>Adicionar</Text>
+        </TouchableOpacity>
+      </View>
+
+      {REFEICOES.map((refeicao) => (
+        <View key={refeicao.id} style={styles.refeicaoItem}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.refeicaoNome}>{refeicao.nome}</Text>
+            <Text style={styles.refeicaoDescricao}>{refeicao.descricao}</Text>
+          </View>
+          <Text style={styles.refeicaoKcal}>{refeicao.kcal} kcal</Text>
+        </View>
+      ))}
+
+      {/* Assistente */}
+      <View style={styles.assistenteBox}>
+        <View style={styles.assistenteHeader}>
+          <View style={styles.assistenteIcone}>
+            <Feather name="cpu" size={16} color="#000" />
+          </View>
+          <Text style={styles.assistenteTexto}>
+            Oi! Sou o assistente do Gymvance. Como posso te ajudar com sua alimentação hoje?
+          </Text>
+        </View>
+        <View style={styles.assistenteInputRow}>
+          <TextInput
+            style={styles.assistenteInput}
+            placeholder="Digite sua pergunta..."
+            placeholderTextColor="#6E6E73"
+            value={pergunta}
+            onChangeText={setPergunta}
+          />
+          <TouchableOpacity style={styles.assistenteEnviar}>
+            <Feather name="arrow-right" size={16} color="#000" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={{ height: 90 }} />
+    </ScrollView>
+  );
+}
+
+function TelaGaleria({ onVoltar }) {
+  return (
+    <View style={styles.container}>
+      <View style={styles.galeriaHeader}>
+        <TouchableOpacity onPress={onVoltar}>
+          <Feather name="arrow-left" size={22} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.galeriaTitulo}>Minhas fotos</Text>
+        <View style={styles.galeriaHeaderIcones}>
+          <Feather name="search" size={20} color="#fff" style={{ marginRight: 16 }} />
+          <Feather name="more-vertical" size={20} color="#fff" />
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {FOTOS_REFEICOES.map((grupo) => (
+          <View key={grupo.data} style={{ marginBottom: 20 }}>
+            <Text style={styles.galeriaData}>{grupo.data}</Text>
+            <View style={styles.galeriaGrid}>
+              {grupo.fotos.map((foto, index) => (
+                <View key={index} style={styles.galeriaFotoVazia}>
+                  <Feather name="image" size={22} color="#3A3A3C" />
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+
+      <View style={styles.navBar}>
+        <View style={styles.navItem}>
+          <Feather name="camera" size={20} color="#3DDC5C" />
+          <Text style={[styles.navLabel, { color: '#3DDC5C' }]}>Fotos</Text>
+        </View>
+        <View style={styles.navItem}>
+          <Feather name="folder" size={20} color="#8E8E93" />
+          <Text style={styles.navLabel}>Álbuns</Text>
+        </View>
+        <View style={styles.navItem}>
+          <Feather name="clock" size={20} color="#8E8E93" />
+          <Text style={styles.navLabel}>Histórias</Text>
+        </View>
+        <View style={styles.navItem}>
+          <Feather name="more-horizontal" size={20} color="#8E8E93" />
+          <Text style={styles.navLabel}>Mais</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+export default function Alimentacao({ navigation }) {
+  const [tela, setTela] = useState('dashboard'); // 'dashboard' | 'galeria' | 'camera'
+  const [cameraPermission, requestPermission] = useCameraPermissions();
+  const [fotoCapturada, setFotoCapturada] = useState(null);
+  const cameraRef = useRef(null);
+
+  useEffect(() => {
+    if (!cameraPermission) {
+      requestPermission();
+    }
+  }, [cameraPermission, requestPermission]);
+
+  const abrirCamera = async () => {
+    if (!cameraPermission) {
+      const permission = await requestPermission();
+      if (!permission.granted) {
+        if (permission.canAskAgain === false) {
+          Alert.alert('Câmera indisponível', 'Abra as configurações do dispositivo para permitir o acesso à câmera.');
+          Linking.openSettings();
+          return;
+        }
+        Alert.alert('Permissão necessária', 'Precisamos da câmera para registrar sua refeição.');
+        return;
+      }
+    }
+
+    if (cameraPermission?.granted) {
+      setTela('camera');
+    }
+  };
+
+  const tirarFoto = async () => {
+    if (!cameraRef.current) {
+      return;
+    }
+
+    try {
+      const photo = await cameraRef.current.takePictureAsync();
+      if (photo?.uri) {
+        setFotoCapturada(photo.uri);
+      }
+      setTela('dashboard');
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível capturar a imagem.');
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      {tela === 'dashboard' ? (
+        <TelaDashboard
+          onAbrirGaleria={() => setTela('galeria')}
+          onAbrirCamera={abrirCamera}
+          fotoCapturada={fotoCapturada}
+        />
+      ) : tela === 'galeria' ? (
+        <TelaGaleria onVoltar={() => setTela('dashboard')} />
+      ) : (
+        <View style={styles.cameraContainer}>
+          <CameraView ref={cameraRef} style={styles.cameraView} facing="back" />
+          <View style={styles.cameraActions}>
+            <TouchableOpacity style={styles.cameraButton} onPress={tirarFoto}>
+              <Feather name="camera" size={20} color="#000" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cameraClose} onPress={() => setTela('dashboard')}>
+              <Feather name="x" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {tela === 'dashboard' && (
+        <View style={styles.navBar}>
+          <TouchableOpacity style={styles.navItem} onPress={() => navigation?.navigate('TreinoHub')}>
+            <Feather name="activity" size={20} color="#8E8E93" />
+            <Text style={styles.navLabel}>Treino</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.navItem, styles.navItemAtivo]} onPress={() => setTela('dashboard')}>
+            <Feather name="heart" size={20} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={() => navigation?.navigate('Batimento')}>
+            <Feather name="watch" size={20} color="#8E8E93" />
+            <Text style={styles.navLabel}>Relógio</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#000', paddingHorizontal: 16 },
+  fotoCapturadaWrapper: { marginBottom: 16 },
+  fotoCapturada: { width: '100%', height: 160, borderRadius: 16 },
+  cameraContainer: { flex: 1, backgroundColor: '#000' },
+  cameraView: { flex: 1 },
+  cameraActions: { position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 18 },
+  cameraButton: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#3DDC5C', alignItems: 'center', justifyContent: 'center' },
+  cameraClose: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 12, marginBottom: 16 },
+  perfilIcone: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#1C1C1E', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  headerNome: { color: '#fff', fontSize: 14, flex: 1 },
+  headerDireita: { flexDirection: 'row', alignItems: 'center' },
+  logo: { color: '#3DDC5C', fontWeight: '700', fontSize: 15 },
+  diasRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+  diaItem: { alignItems: 'center' },
+  diaLabel: { color: '#8E8E93', fontSize: 11, marginBottom: 6 },
+  diaCirculo: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  diaCirculoAtivo: { backgroundColor: '#3DDC5C' },
+  diaNumero: { color: '#8E8E93', fontSize: 13 },
+  diaNumeroAtivo: { color: '#000', fontWeight: '700' },
+  card: { backgroundColor: '#1C1C1E', borderRadius: 16, padding: 16, marginBottom: 20 },
+  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  cardTitulo: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  cardPercentual: { color: '#3DDC5C', fontSize: 13, fontWeight: '600' },
+  kcalTexto: { color: '#fff', fontSize: 28, fontWeight: '700', marginBottom: 8 },
+  kcalMeta: { color: '#8E8E93', fontSize: 14, fontWeight: '400' },
+  barraFundo: { height: 6, backgroundColor: '#2C2C2E', borderRadius: 3, overflow: 'hidden' },
+  barraPreenchida: { height: 6, borderRadius: 3 },
+  macrosRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 },
+  macroItem: { flex: 1, marginRight: 8 },
+  macroLabel: { color: '#8E8E93', fontSize: 10, marginBottom: 4 },
+  macroValor: { color: '#fff', fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  macroMeta: { color: '#8E8E93', fontWeight: '400' },
+  secaoHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  secaoTitulo: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  botaoAdicionar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#3DDC5C', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  botaoAdicionarTexto: { color: '#000', fontSize: 12, fontWeight: '600', marginLeft: 4 },
+  refeicaoItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 10 },
+  refeicaoNome: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  refeicaoDescricao: { color: '#8E8E93', fontSize: 12, marginTop: 2 },
+  refeicaoKcal: { color: '#3DDC5C', fontSize: 13, fontWeight: '600' },
+  assistenteBox: { backgroundColor: '#1C1C1E', borderRadius: 16, padding: 12, marginTop: 8 },
+  assistenteHeader: { flexDirection: 'row', alignItems: 'flex-start' },
+  assistenteIcone: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#3DDC5C', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  assistenteTexto: { color: '#D1D1D6', fontSize: 12, flex: 1, lineHeight: 17 },
+  assistenteInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+  assistenteInput: { flex: 1, backgroundColor: '#2C2C2E', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, color: '#fff', fontSize: 13 },
+  assistenteEnviar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#3DDC5C', justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+  galeriaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, marginBottom: 16 },
+  galeriaTitulo: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  galeriaHeaderIcones: { flexDirection: 'row' },
+  galeriaData: { color: '#8E8E93', fontSize: 13, marginBottom: 8, paddingHorizontal: 16 },
+  galeriaGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 },
+  galeriaFotoVazia: { width: '23%', aspectRatio: 1, margin: '1%', backgroundColor: '#1C1C1E', borderRadius: 6, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed' },
+  navBar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#1C1C1E', backgroundColor: '#000' },
+  navItem: { alignItems: 'center' },
+  navItemAtivo: { backgroundColor: '#3DDC5C', width: 44, height: 44, borderRadius: 22, justifyContent: 'center' },
+  navLabel: { color: '#8E8E93', fontSize: 10, marginTop: 2 },
+});

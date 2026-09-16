@@ -42,7 +42,11 @@ export default function Calorias({ navigation }) {
 
       {/* Círculo de calorias */}
       <View style={styles.circuloWrapper}>
-        <View style={styles.circulo}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.circulo}
+          onPress={() => navigation?.navigate('Batimento')}
+        >
           <View style={styles.badgePercentualCirculo}>
             <Text style={styles.badgeTexto}>{percentualMeta}%</Text>
           </View>
@@ -54,7 +58,7 @@ export default function Calorias({ navigation }) {
           <Text style={styles.kcalMetaTexto}>
             de {kcalMeta.toLocaleString('pt-BR')} kcal
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Batimento cardíaco */}
@@ -74,16 +78,28 @@ export default function Calorias({ navigation }) {
 
       {/* Navegação inferior */}
       <View style={styles.navInferior}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-          <Image source={require('../../assets/anilha.jpeg')} style={styles.navIcone} />
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => navigation?.navigate('TreinoHub')}
+        >
+          <Image source={require('../../assets/anilha.png')} style={styles.navIcone} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-          <Image source={require('../../assets/alimentacao.jpeg')} style={styles.navIcone} />
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => navigation?.navigate('Alimentacao')}
+        >
+          <Image source={require('../../assets/alimentaçao.png')} style={styles.navIcone} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItemAtivo} activeOpacity={0.7}>
-          <Image source={require('../../assets/relogio.jpeg')} style={styles.navIcone} />
+        <TouchableOpacity
+          style={styles.navItemAtivo}
+          activeOpacity={0.7}
+          onPress={() => navigation?.navigate('Batimento')}
+        >
+          <Image source={require('../../assets/relogio.png')} style={styles.navIcone} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>

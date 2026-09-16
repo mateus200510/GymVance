@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  Alert,
+  Linking,
 } from 'react-native';
+import * as Location from 'expo-location';
 
 // Tela de "Batimento Cardíaco" do Gymvance
 // Mostra o BPM em destaque no círculo central e a queima diária logo abaixo
@@ -18,6 +21,56 @@ export default function Batimento({ navigation }) {
   const kcalQueimadas = 1365;
   const kcalMeta = 2500;
   const percentualMeta = Math.round((kcalQueimadas / kcalMeta) * 100);
+  const [location, setLocation] = useState(null);
+  const [precision, setPrecision] = useState(null);
+  const [gpsError, setGpsError] = useState('');
+
+  const atualizarLocalizacao = async () => {
+    setGpsError('');
+
+    try {
+      const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        if (!canAskAgain) {
+          Alert.alert('Localização bloqueada', 'Abra as configurações do aparelho para permitir o uso do GPS.');
+          Linking.openSettings();
+        } else {
+          setGpsError('Permissão de localização negada.');
+        }
+        return;
+      }
+
+      const providerStatus = await Location.getProviderStatusAsync();
+      if (!providerStatus.locationServicesEnabled) {
+        setGpsError('GPS desativado. Ative a localização para continuar.');
+        return;
+      }
+
+      const posicao = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const precisao = posicao.coords.accuracy ?? 0;
+      setLocation(posicao.coords);
+      setPrecision(precisao);
+    } catch (error) {
+      setGpsError('Não foi possível obter a localização agora.');
+    }
+  };
+
+  useEffect(() => {
+    atualizarLocalizacao();
+  }, []);
+
+  const statusPrecisao =
+    precision === null
+      ? 'Aguardando...' 
+      : precision < 10
+        ? '🟢 Alta precisão'
+        : precision <= 30
+          ? '🟡 Média precisão'
+          : '🔴 Baixa precisão';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,13 +94,17 @@ export default function Batimento({ navigation }) {
 
       {/* Círculo de BPM */}
       <View style={styles.circuloWrapper}>
-        <View style={styles.circulo}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.circulo}
+          onPress={() => navigation?.navigate('Calorias')}
+        >
           <Text style={styles.bpmNumero}>{bpmAtual}</Text>
           <View style={styles.bpmLinha}>
             <Text style={styles.coracaoIcone}>♡</Text>
             <Text style={styles.bpmLabel}>BPM</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Queima diária */}
@@ -67,18 +124,52 @@ export default function Batimento({ navigation }) {
         </View>
       </View>
 
+      <View style={styles.localizacaoBox}>
+        <View style={styles.localizacaoHeader}>
+          <Text style={styles.localizacaoTitulo}>LOCALIZAÇÃO</Text>
+          <TouchableOpacity onPress={atualizarLocalizacao}>
+            <Text style={styles.localizacaoAtualizar}>Atualizar</Text>
+          </TouchableOpacity>
+        </View>
+        {gpsError ? (
+          <Text style={styles.localizacaoErro}>{gpsError}</Text>
+        ) : (
+          <>
+            <Text style={styles.localizacaoValor}>
+              {location ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : 'Buscando...' }
+            </Text>
+            <Text style={styles.localizacaoPrecisao}>{statusPrecisao}</Text>
+            <Text style={styles.localizacaoInfo}>
+              {precision !== null ? `Precisão: ${precision.toFixed(0)} m` : 'Precisão em análise'}
+            </Text>
+          </>
+        )}
+      </View>
+
       {/* Navegação inferior */}
       <View style={styles.navInferior}>
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-          <Image source={require('../../assets/anilha.jpeg')} style={styles.navIcone} />
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => navigation?.navigate('TreinoHub')}
+        >
+          <Image source={require('../../assets/anilha.png')} style={styles.navIcone} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-          <Image source={require('../../assets/alimentacao.jpeg')} style={styles.navIcone} />
+        <TouchableOpacity
+          style={styles.navItem}
+          activeOpacity={0.7}
+          onPress={() => navigation?.navigate('Alimentacao')}
+        >
+          <Image source={require('../../assets/alimentaçao.png')} style={styles.navIcone} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItemAtivo} activeOpacity={0.7}>
-          <Image source={require('../../assets/relogio.jpeg')} style={styles.navIcone} />
+        <TouchableOpacity
+          style={styles.navItemAtivo}
+          activeOpacity={0.7}
+          onPress={() => navigation?.navigate('Batimento')}
+        >
+          <Image source={require('../../assets/relogio.png')} style={styles.navIcone} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -173,6 +264,50 @@ const styles = StyleSheet.create({
     backgroundColor: CINZA_ESCURO,
     borderRadius: 14,
     padding: 16,
+  },
+  localizacaoBox: {
+    backgroundColor: CINZA_ESCURO,
+    borderRadius: 14,
+    marginTop: 18,
+    padding: 16,
+  },
+  localizacaoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  localizacaoTitulo: {
+    color: '#AAAAAA',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  localizacaoAtualizar: {
+    color: VERDE,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  localizacaoValor: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  localizacaoPrecisao: {
+    color: VERDE,
+    fontWeight: '700',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  localizacaoInfo: {
+    color: '#888888',
+    fontSize: 11,
+  },
+  localizacaoErro: {
+    color: '#FF8A80',
+    fontSize: 12,
+    fontWeight: '600',
   },
   queimaCabecalho: {
     flexDirection: 'row',
