@@ -9,6 +9,7 @@ import {
 import {
   NavigationContainer,
 } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import {
   createNativeStackNavigator,
@@ -60,13 +61,14 @@ function SplashScreen({ navigation }) {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Splash"
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Splash"
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
 
         {/* TELA INICIAL */}
         <Stack.Screen
@@ -176,8 +178,9 @@ export default function App() {
           component={SessaoAtiva}
         />
 
-      </Stack.Navigator>
-    </NavigationContainer>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 

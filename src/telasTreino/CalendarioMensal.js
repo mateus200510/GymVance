@@ -24,9 +24,20 @@ export default function CalendarioMensal({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
-      <TouchableOpacity onPress={() => navigation?.goBack()}>
-        <Ionicons name="chevron-back" size={22} color={COLORS.green} />
-      </TouchableOpacity>
+      <View style={styles.topRow}>
+        <TouchableOpacity onPress={() => navigation?.goBack()}>
+          <Ionicons name="chevron-back" size={22} color={COLORS.green} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.rankingButton}
+          onPress={() => navigation?.navigate('Ranking')}
+          accessibilityLabel="Abrir ranking"
+        >
+          <Ionicons name="trophy-outline" size={16} color={COLORS.text} />
+          <Text style={styles.rankingText}>Ranking</Text>
+        </TouchableOpacity>
+      </View>
 
       <Text style={styles.mes}>Outubro</Text>
 
@@ -88,6 +99,9 @@ function BottomNav({ active, navigation, insets }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingTop: 8 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  rankingButton: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1E1E1E', borderRadius: 10, borderWidth: 1, borderColor: '#333', paddingHorizontal: 8, paddingVertical: 6 },
+  rankingText: { color: COLORS.text, fontSize: 11, fontWeight: '700' },
   mes: { color: COLORS.green, fontWeight: '700', fontSize: 18, marginVertical: 14 },
   diasSemanaRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   diaSemanaLetra: { color: COLORS.muted, width: 34, textAlign: 'center', fontSize: 12 },

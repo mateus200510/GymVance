@@ -19,7 +19,17 @@ export default function NovaSessao({ navigation }) {
             <Text style={styles.userNome}>Lucas Miyashiro</Text>
           </View>
         </View>
-        <Text style={styles.logo}>Gym<Text style={{ color: COLORS.green }}>vance</Text></Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.rankingButton}
+            onPress={() => navigation?.navigate('Ranking')}
+            accessibilityLabel="Abrir ranking"
+          >
+            <Ionicons name="trophy-outline" size={16} color={COLORS.text} />
+            <Text style={styles.rankingText}>Ranking</Text>
+          </TouchableOpacity>
+          <Text style={styles.logo}>Gym<Text style={{ color: COLORS.green }}>vance</Text></Text>
+        </View>
       </View>
 
       <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack()}>
@@ -87,6 +97,9 @@ const styles = StyleSheet.create({
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   avatar: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#333' },
   userNome: { color: COLORS.text, fontWeight: '600', fontSize: 13 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rankingButton: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1E1E1E', borderRadius: 10, borderWidth: 1, borderColor: '#333', paddingHorizontal: 8, paddingVertical: 6 },
+  rankingText: { color: COLORS.text, fontSize: 11, fontWeight: '700' },
   logo: { color: COLORS.text, fontWeight: '800', fontSize: 16 },
   backBtn: { marginTop: 14, marginBottom: 14 },
   btnUsarSessao: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 12, borderRadius: 12, marginBottom: 18 },

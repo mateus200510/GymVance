@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HISTORY_KEY = 'gymvance_historico';
 const PLAN_KEY = 'gymvance_plano_ativo';
+const USER_PROFILE_KEY = 'gymvance_usuario';
 
 export async function getWorkoutHistory() {
   try {
@@ -39,5 +40,27 @@ export async function getSelectedPlan() {
   } catch (error) {
     console.warn('Erro ao ler plano:', error);
     return null;
+  }
+}
+
+export async function saveUserProfile(profile) {
+  try {
+    const current = await getUserProfile();
+    const next = { ...current, ...profile };
+    await AsyncStorage.setItem(USER_PROFILE_KEY, JSON.stringify(next));
+    return next;
+  } catch (error) {
+    console.warn('Erro ao salvar perfil do usuário:', error);
+    return null;
+  }
+}
+
+export async function getUserProfile() {
+  try {
+    const raw = await AsyncStorage.getItem(USER_PROFILE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.warn('Erro ao ler perfil do usuário:', error);
+    return {};
   }
 }

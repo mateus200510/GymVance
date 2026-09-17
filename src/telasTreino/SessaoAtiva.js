@@ -98,9 +98,19 @@ export default function SessaoAtiva({ navigation }) {
         <View style={styles.timerPill}>
           <Text style={styles.timerText}>{tempo}</Text>
         </View>
-        <TouchableOpacity style={styles.concluirBtn} onPress={handleConcluir}>
-          <Text style={styles.concluirBtnText}>Concluir</Text>
-        </TouchableOpacity>
+        <View style={styles.topBarActions}>
+          <TouchableOpacity
+            style={styles.rankingButton}
+            onPress={() => navigation?.navigate('Ranking')}
+            accessibilityLabel="Abrir ranking"
+          >
+            <Ionicons name="trophy-outline" size={16} color={COLORS.text} />
+            <Text style={styles.rankingText}>Ranking</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.concluirBtn} onPress={handleConcluir}>
+            <Text style={styles.concluirBtnText}>Concluir</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.sessaoAtivaTag}>
@@ -222,6 +232,9 @@ const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   timerPill: { backgroundColor: COLORS.inputBg, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
   timerText: { color: COLORS.text, fontWeight: '600' },
+  topBarActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rankingButton: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1E1E1E', borderRadius: 10, borderWidth: 1, borderColor: '#333', paddingHorizontal: 8, paddingVertical: 6 },
+  rankingText: { color: COLORS.text, fontSize: 11, fontWeight: '700' },
   concluirBtn: { backgroundColor: COLORS.green, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   concluirBtnText: { color: '#000', fontWeight: '700' },
   sessaoAtivaTag: { marginTop: 16 },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,31 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+import { getUserProfile, saveUserProfile } from '../services/storage';
 
 const KG_PARA_LBS = 2.20462;
 
 export default function PesoScreen({ navigation }) {
   const [peso, setPeso] = useState('');
   const [unidade, setUnidade] = useState('kg'); // 'kg' | 'lbs'
+
+  useEffect(() => {
+    const carregarPerfil = async () => {
+      const perfil = await getUserProfile();
+      if (perfil?.peso) {
+        setPeso(String(perfil.peso));
+      }
+      if (perfil?.pesoUnidade) {
+        setUnidade(perfil.pesoUnidade);
+      }
+    };
+
+    carregarPerfil();
+  }, []);
 
   function trocarUnidade() {
     const novaUnidade = unidade === 'kg' ? 'lbs' : 'kg';
@@ -68,7 +85,17 @@ export default function PesoScreen({ navigation }) {
 
       <TouchableOpacity
         style={styles.advanceButton}
-        onPress={() => navigation.navigate('Altura', { peso, unidade })}
+        onPress={async () => {
+          const valor = Number.parseFloat(String(peso).replace(',', '.'));
+
+          if (!peso || Number.isNaN(valor) || valor <= 0) {
+            Alert.alert('Peso obrigatório', 'Informe um peso válido para continuar.');
+            return;
+          }
+
+          await saveUserProfile({ peso: valor, pesoUnidade: unidade });
+          navigation.navigate('Altura', { peso: String(valor), unidade });
+        }}
       >
         <Text style={styles.advanceText}>Avançar</Text>
       </TouchableOpacity>

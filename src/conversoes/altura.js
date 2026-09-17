@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,34 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { getUserProfile, saveUserProfile } from '../services/storage';
+
 const CM_PARA_IN = 0.393701;
 
-export default function AlturaScreen({ navigation }) {
+export default function AlturaScreen({ navigation, route }) {
   const [altura, setAltura] = useState('');
   const [unidade, setUnidade] = useState('cm'); // 'cm' | 'in'
+
+  useEffect(() => {
+    const carregarPerfil = async () => {
+      const perfil = await getUserProfile();
+      if (perfil?.altura) {
+        setAltura(String(perfil.altura));
+      }
+      if (perfil?.alturaUnidade) {
+        setUnidade(perfil.alturaUnidade);
+      }
+      if (route?.params?.peso) {
+        setAltura((prev) => prev || String(route.params.peso));
+      }
+    };
+
+    carregarPerfil();
+  }, [route]);
 
   function trocarUnidade() {
     const novaUnidade = unidade === 'cm' ? 'in' : 'cm';
@@ -68,7 +88,17 @@ export default function AlturaScreen({ navigation }) {
 
       <TouchableOpacity
         style={styles.advanceButton}
-        onPress={() => navigation.replace('TreinoHub')}
+        onPress={async () => {
+          const valor = Number.parseFloat(String(altura).replace(',', '.'));
+
+          if (!altura || Number.isNaN(valor) || valor <= 0) {
+            Alert.alert('Altura obrigatória', 'Informe uma altura válida para continuar.');
+            return;
+          }
+
+          await saveUserProfile({ altura: valor, alturaUnidade: unidade });
+          navigation.navigate('Genero');
+        }}
       >
         <Text style={styles.advanceText}>Avançar</Text>
       </TouchableOpacity>

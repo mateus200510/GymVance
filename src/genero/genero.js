@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+import { getUserProfile, saveUserProfile } from '../services/storage';
 
 const MESES = [
   'Janeiro',
@@ -34,8 +36,28 @@ export default function Genero({ navigation }) {
   const [dia, setDia] = useState('08');
   const [ano, setAno] = useState('1998');
 
-  const handleAvancar = () => {
-    navigation?.navigate('Ranking');
+  useEffect(() => {
+    const carregarPerfil = async () => {
+      const perfil = await getUserProfile();
+      if (perfil?.nome) setNome(perfil.nome);
+      if (perfil?.genero) setGeneroSelecionado(perfil.genero);
+      if (perfil?.mesNascimento) setMesSelecionado(perfil.mesNascimento);
+      if (perfil?.diaNascimento) setDia(perfil.diaNascimento);
+      if (perfil?.anoNascimento) setAno(perfil.anoNascimento);
+    };
+
+    carregarPerfil();
+  }, []);
+
+  const handleAvancar = async () => {
+    await saveUserProfile({
+      nome,
+      genero: generoSelecionado,
+      mesNascimento: mesSelecionado,
+      diaNascimento: dia,
+      anoNascimento: ano,
+    });
+    navigation?.replace('TreinoHub');
   };
 
   return (
@@ -85,7 +107,7 @@ export default function Genero({ navigation }) {
               return (
                 <TouchableOpacity
                   key={item}
-                  style={styles.generoOption}
+                  style={[styles.generoOption, ativo && styles.generoOptionAtivo]}
                   onPress={() => setGeneroSelecionado(item)}
                 >
                   <View style={[styles.radio, ativo && styles.radioAtivo]}>
@@ -254,6 +276,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     backgroundColor: '#181818',
+  },
+  generoOptionAtivo: {
+    borderColor: '#3DDC5C',
+    backgroundColor: '#1B2A1E',
   },
   radio: {
     width: 18,

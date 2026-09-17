@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PODIO = [
   { posicao: 2, nome: 'Gabriel S.', dias: 18, cor: '#B0B0B0' },
@@ -25,11 +26,30 @@ const LISTA = [
 const ABAS = ['Semanal', 'Mensal', 'Geral'];
 
 export default function Ranking({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [abaAtiva, setAbaAtiva] = useState('Semanal');
+  const [dadosRanking, setDadosRanking] = useState([]);
+
+  React.useEffect(() => {
+    const base = [
+      { posicao: 1, nome: 'Renata A.', treinos: 24, dias: 24, voce: false },
+      { posicao: 2, nome: 'Gabriel S.', treinos: 18, dias: 18, voce: false },
+      { posicao: 3, nome: 'Thiago M.', treinos: 15, dias: 15, voce: false },
+      { posicao: 4, nome: 'Felipe Neto', treinos: 14, dias: 12, voce: false },
+      { posicao: 5, nome: 'Beatriz Sou', treinos: 11, dias: 9, voce: false },
+      { posicao: 6, nome: 'Carlos Ed', treinos: 10, dias: 7, voce: false },
+      { posicao: 7, nome: 'Lucas Miyashiro', treinos: 8, dias: 5, voce: true },
+    ];
+
+    setDadosRanking(base);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: 96 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <View style={styles.streak}>
             <MaterialCommunityIcons name="fire" size={22} color="#3DDC5C" />
@@ -90,7 +110,7 @@ export default function Ranking({ navigation }) {
         </View>
 
         <View style={styles.lista}>
-          {LISTA.map((item) => (
+          {dadosRanking.length > 0 ? dadosRanking.map((item) => (
             <View key={item.posicao} style={[styles.linha, item.voce && styles.linhaVoce]}>
               <Text style={styles.linhaPosicao}>{item.posicao}</Text>
               <View style={styles.linhaAvatar}>
@@ -112,11 +132,16 @@ export default function Ranking({ navigation }) {
                 <Text style={styles.linhaDias}>{item.dias}</Text>
               </View>
             </View>
-          ))}
+          )) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>Ranking ainda não está disponível</Text>
+              <Text style={styles.emptyText}>Volte mais tarde para acompanhar sua posição.</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
-      <View style={styles.bottomNav}>
+      <View style={[styles.bottomNav, { paddingBottom: insets.bottom + 10 }]}>
         <TouchableOpacity onPress={() => navigation?.navigate('TreinoHub')} style={styles.navItem}>
           <MaterialCommunityIcons name="dumbbell" size={22} color="#fff" />
           <Text style={styles.navLabel}>Treino</Text>

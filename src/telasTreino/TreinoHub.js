@@ -19,7 +19,7 @@ export default function TreinoHub({ navigation }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={[styles.safe, { paddingBottom: 92 + insets.bottom }]}>
+    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
       <View style={styles.header}>
         <View style={styles.streak}>
           <Ionicons name="flame" size={18} color={COLORS.laranja} />
@@ -32,12 +32,22 @@ export default function TreinoHub({ navigation }) {
             <Text style={styles.userNome}>Lucas Miyashiro</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.proChip}
-          onPress={() => navigation?.navigate('Planos')}
-        >
-          <Text style={styles.proChipText}>PRO</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.rankingButton}
+            onPress={() => navigation?.navigate('Ranking')}
+            accessibilityLabel="Abrir ranking"
+          >
+            <Ionicons name="trophy-outline" size={18} color={COLORS.text} />
+            <Text style={styles.rankingText}>Ranking</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.proChip}
+            onPress={() => navigation?.navigate('Planos')}
+          >
+            <Text style={styles.proChipText}>PRO</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.semanaRow}>
@@ -93,6 +103,19 @@ const styles = StyleSheet.create({
   streak: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   streakTexto: { color: COLORS.text, fontWeight: '700' },
   userBox: { marginLeft: 8, flex: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rankingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#202020',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  rankingText: { color: COLORS.text, fontSize: 12, fontWeight: '700' },
   proChip: { backgroundColor: COLORS.green, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6 },
   proChipText: { color: '#000', fontWeight: '800', fontSize: 11 },
   tituloSecundario: { color: COLORS.muted, fontSize: 11 },
@@ -108,7 +131,19 @@ const styles = StyleSheet.create({
   btnIniciarText: { color: COLORS.text, fontWeight: '700' },
   btnCriar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 14, borderRadius: 12 },
   btnCriarText: { color: '#000', fontWeight: '700' },
-  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingTop: 10, position: 'absolute', bottom: 0, left: 0, right: 0 },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#242424',
+    paddingTop: 10,
+    backgroundColor: COLORS.bg,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   navItem: { alignItems: 'center', gap: 2 },
   navLabel: { color: COLORS.muted, fontSize: 11 },
 });
