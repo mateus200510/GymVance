@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', inputBg: '#2A2A2A' };
 
@@ -9,8 +9,8 @@ export default function NovaSessao({ navigation }) {
   const [titulo, setTitulo] = useState('');
   const insets = useSafeAreaInsets();
 
-  return (
-    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
+return (
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View>
           <Text style={styles.tituloSecundario}>Evolução diária</Text>
@@ -32,25 +32,32 @@ export default function NovaSessao({ navigation }) {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack()}>
-        <Ionicons name="chevron-back" size={22} color={COLORS.green} />
-      </TouchableOpacity>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack()}>
+          <Ionicons name="chevron-back" size={22} color={COLORS.green} />
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.btnUsarSessao}>
-        <Ionicons name="add" size={18} color="#000" />
-        <Text style={styles.btnUsarSessaoText}>Usar sessão criada</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.btnUsarSessao}>
+          <Ionicons name="add" size={18} color="#000" />
+          <Text style={styles.btnUsarSessaoText}>Usar sessão criada</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.label}>Título da sessão</Text>
-      <TextInput
-        placeholder="Adicionar título..."
-        placeholderTextColor={COLORS.muted}
-        value={titulo}
-        onChangeText={setTitulo}
-        style={styles.input}
-      />
+        <Text style={styles.label}>Título da sessão</Text>
+        <TextInput
+          placeholder="Adicionar título..."
+          placeholderTextColor={COLORS.muted}
+          value={titulo}
+          onChangeText={setTitulo}
+          style={styles.input}
+        />
 
-      <View style={{ flex: 1 }} />
+        <View style={{ flex: 1 }} />
+      </ScrollView>
 
       <View style={styles.rodape}>
         <TouchableOpacity style={styles.btnExercicio}>
@@ -106,6 +113,7 @@ const styles = StyleSheet.create({
   btnUsarSessaoText: { color: '#000', fontWeight: '700' },
   label: { color: COLORS.text, fontWeight: '600', marginBottom: 8 },
   input: { backgroundColor: COLORS.inputBg, color: COLORS.text, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
+  spacer: { flex: 1, minHeight: 18 },
   rodape: { gap: 10, marginBottom: 8 },
   btnExercicio: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.green, paddingVertical: 12, borderRadius: 12 },
   btnExercicioText: { color: COLORS.green, fontWeight: '700' },

@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A' };
 
@@ -22,8 +22,8 @@ const FORA_DO_MES = [27, 28, 29, 30];
 export default function CalendarioMensal({ navigation }) {
   const insets = useSafeAreaInsets();
 
-  return (
-    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
+return (
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.topRow}>
         <TouchableOpacity onPress={() => navigation?.goBack()}>
           <Ionicons name="chevron-back" size={22} color={COLORS.green} />
@@ -41,34 +41,40 @@ export default function CalendarioMensal({ navigation }) {
 
       <Text style={styles.mes}>Outubro</Text>
 
-      <View style={styles.diasSemanaRow}>
-        {DIAS_SEMANA.map((d, i) => (
-          <Text key={i} style={styles.diaSemanaLetra}>{d}</Text>
-        ))}
-      </View>
-
-      {SEMANAS.map((semana, i) => (
-        <View key={i} style={styles.semanaRow}>
-          {semana.map((num, j) => {
-            const foraDoMes = i === 0 && FORA_DO_MES.includes(num);
-            const temTreino = DIAS_TREINO.includes(num) && !foraDoMes;
-            return (
-              <View key={j} style={styles.diaCelula}>
-                <View style={[styles.diaCirculo, temTreino && styles.diaCirculoAtivo]}>
-                  <Text style={[styles.diaNumero, foraDoMes && { color: '#444' }]}>{num}</Text>
-                </View>
-              </View>
-            );
-          })}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.diasSemanaRow}>
+          {DIAS_SEMANA.map((d, i) => (
+            <Text key={i} style={styles.diaSemanaLetra}>{d}</Text>
+          ))}
         </View>
-      ))}
 
-      <View style={{ flex: 1 }} />
+        {SEMANAS.map((semana, i) => (
+          <View key={i} style={styles.semanaRow}>
+            {semana.map((num, j) => {
+              const foraDoMes = i === 0 && FORA_DO_MES.includes(num);
+              const temTreino = DIAS_TREINO.includes(num) && !foraDoMes;
+              return (
+                <View key={j} style={styles.diaCelula}>
+                  <View style={[styles.diaCirculo, temTreino && styles.diaCirculoAtivo]}>
+                    <Text style={[styles.diaNumero, foraDoMes && { color: '#444' }]}>{num}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ))}
 
-      <TouchableOpacity style={styles.btnCriarSemana}>
-        <Ionicons name="add" size={18} color="#000" />
-        <Text style={styles.btnCriarSemanaText}>Criar semana de treino</Text>
-      </TouchableOpacity>
+        <View style={{ flex: 1 }} />
+
+        <TouchableOpacity style={styles.btnCriarSemana}>
+          <Ionicons name="add" size={18} color="#000" />
+          <Text style={styles.btnCriarSemanaText}>Criar semana de treino</Text>
+        </TouchableOpacity>
+      </ScrollView>
 
       <BottomNav navigation={navigation} active="Treino" insets={insets} />
     </SafeAreaView>
@@ -98,8 +104,8 @@ function BottomNav({ active, navigation, insets }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingTop: 8 },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  safe: { flex: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   rankingButton: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#1E1E1E', borderRadius: 10, borderWidth: 1, borderColor: '#333', paddingHorizontal: 8, paddingVertical: 6 },
   rankingText: { color: COLORS.text, fontSize: 11, fontWeight: '700' },
   mes: { color: COLORS.green, fontWeight: '700', fontSize: 18, marginVertical: 14 },

@@ -10,11 +10,13 @@ import {
   NavigationContainer,
 } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 import {
   createNativeStackNavigator,
 } from '@react-navigation/native-stack';
 
+import Perfil from './src/Perfil/Perfil';
 import Cadastro from './src/telasCadastro/Cadastro';
 import Entrar from './src/telasLogin/Entrar';
 import PesoScreen from './src/conversoes/peso';
@@ -62,6 +64,7 @@ function SplashScreen({ navigation }) {
 export default function App() {
   return (
     <SafeAreaProvider>
+      <StatusBar style="light" />
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Splash"
@@ -101,6 +104,11 @@ export default function App() {
         <Stack.Screen
           name="TreinoHub"
           component={TreinoHub}
+        />
+
+        <Stack.Screen
+          name="Perfil"
+          component={Perfil}
         />
 
         <Stack.Screen

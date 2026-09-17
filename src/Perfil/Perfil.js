@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,18 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  SafeAreaView,
+  Image,
+  Modal,
+  Alert,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+
+import { getProgressPhotos, addProgressPhoto, setProgressPhotos, getUserProfile } from '../services/storage';
 
 // Medidas ficam vazias (sem valores/variações de exemplo) até o usuário registrar.
 const MEDIDAS = [
@@ -18,7 +27,60 @@ const MEDIDAS = [
   { label: 'Peito', unidade: 'cm' },
 ];
 
-function TelaEvolucao({ nomeUsuario, onEditar }) {
+const DIRETORIO_FOTOS = FileSystem.documentDirectory ? `${FileSystem.documentDirectory}progresso/` : null;
+
+async function salvarFotoLocal(uri) {
+  if (!DIRETORIO_FOTOS) {
+    return uri;
+  }
+
+  await FileSystem.makeDirectoryAsync(DIRETORIO_FOTOS, { intermediates: true });
+
+  let ext = 'jpg';
+  const pedaco = uri.split('.').pop() || '';
+  const semQuery = pedaco.split('?')[0].toLowerCase();
+  if (semQuery && semQuery.length <= 5) {
+    ext = semQuery;
+  }
+
+  const destino = `${DIRETORIO_FOTOS}progresso_${Date.now()}.${ext}`;
+  await FileSystem.copyAsync({ from: uri, to: destino });
+  return destino;
+}
+
+function formatarData(iso) {
+  if (!iso) {
+    return '';
+  }
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) {
+    return '';
+  }
+  return `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}/${data.getFullYear()}`;
+}
+
+function CardFoto({ label, foto, onVerFoto }) {
+  return (
+    <View style={styles.fotoCard}>
+      {foto ? (
+        <TouchableOpacity activeOpacity={0.8} onPress={() => onVerFoto(foto.uri)}>
+          <Image source={{ uri: foto.uri }} style={styles.fotoPreenchida} resizeMode="cover" />
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.fotoVazia}>
+          <Feather name="image" size={24} color="#3A3A3C" />
+        </View>
+      )}
+      <Text style={styles.fotoLabel}>{label}</Text>
+      {foto ? <Text style={styles.fotoData}>{formatarData(foto.data)}</Text> : null}
+    </View>
+  );
+}
+
+function TelaEvolucao({ nomeUsuario, fotos, adicionando, onEditar, onAdicionarFoto, onVoltar, onVerFoto }) {
+  const antes = fotos.length > 0 ? fotos[fotos.length - 1] : null;
+  const depois = fotos.length > 0 ? fotos[0] : null;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -28,7 +90,12 @@ function TelaEvolucao({ nomeUsuario, onEditar }) {
           </View>
           <Text style={styles.headerNome}>{nomeUsuario}</Text>
         </View>
-        <Text style={styles.logo}>Gymvance</Text>
+        <View style={styles.headerDireita}>
+          <Text style={styles.logo}>Gymvance</Text>
+          <TouchableOpacity onPress={onVoltar} style={{ marginLeft: 12 }} accessibilityLabel="Voltar">
+            <Feather name="arrow-left" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -36,22 +103,20 @@ function TelaEvolucao({ nomeUsuario, onEditar }) {
         <Text style={styles.subtitulo}>Acompanhe suas fotos e evolução corporal</Text>
 
         <View style={styles.fotosRow}>
-          <View style={styles.fotoCard}>
-            <View style={styles.fotoVazia}>
-              <Feather name="image" size={24} color="#3A3A3C" />
-            </View>
-            <Text style={styles.fotoLabel}>ANTES</Text>
-          </View>
-          <View style={styles.fotoCard}>
-            <View style={styles.fotoVazia}>
-              <Feather name="image" size={24} color="#3A3A3C" />
-            </View>
-            <Text style={styles.fotoLabel}>DEPOIS</Text>
-          </View>
+          <CardFoto label="ANTES" foto={antes} onVerFoto={onVerFoto} />
+          <CardFoto label="DEPOIS" foto={depois} onVerFoto={onVerFoto} />
         </View>
 
-        <TouchableOpacity style={styles.botaoVerde} onPress={onEditar}>
-          <Feather name="plus" size={14} color="#000" />
+        <TouchableOpacity
+          style={[styles.botaoVerde, adicionando && styles.botaoVerdeOcupado]}
+          onPress={onAdicionarFoto}
+          disabled={adicionando}
+        >
+          {adicionando ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <Feather name="plus" size={14} color="#000" />
+          )}
           <Text style={styles.botaoVerdeTexto}>Adicionar Foto</Text>
         </TouchableOpacity>
 
@@ -65,23 +130,31 @@ function TelaEvolucao({ nomeUsuario, onEditar }) {
           ))}
         </View>
 
-        <TouchableOpacity style={styles.botaoVerde}>
+        <TouchableOpacity style={styles.botaoVerde} onPress={onEditar}>
           <Feather name="plus" size={14} color="#000" />
           <Text style={styles.botaoVerdeTexto}>Adicionar Medidas</Text>
         </TouchableOpacity>
 
         <Text style={styles.secaoTitulo}>Histórico</Text>
-        <Text style={styles.historicoMes}>--</Text>
-        <View style={styles.historicoRow}>
-          <View style={styles.historicoFotoVazia}>
-            <Feather name="image" size={18} color="#3A3A3C" />
-          </View>
-          <View style={styles.historicoFotoVazia}>
-            <Feather name="image" size={18} color="#3A3A3C" />
-          </View>
+        <Text style={styles.historicoMes}>
+          {fotos.length === 0
+            ? '—'
+            : `${fotos.length} foto${fotos.length === 1 ? '' : 's'} registrada${fotos.length === 1 ? '' : 's'}`}
+        </Text>
+        <View style={styles.historicoGrid}>
+          {fotos.map((foto) => (
+            <TouchableOpacity
+              key={foto.uri}
+              style={styles.historicoMini}
+              activeOpacity={0.8}
+              onPress={() => onVerFoto(foto.uri)}
+            >
+              <Image source={{ uri: foto.uri }} style={styles.historicoImagem} resizeMode="cover" />
+            </TouchableOpacity>
+          ))}
         </View>
 
-        <View style={{ height: 90 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
     </View>
   );
@@ -151,31 +224,146 @@ function TelaEditarPerfil({ onSalvar }) {
   );
 }
 
-export default function Perfil() {
+export default function Perfil({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [tela, setTela] = useState('evolucao'); // 'evolucao' | 'editar'
+  const [fotos, setFotos] = useState([]);
+  const [nomeUsuario, setNomeUsuario] = useState('Nome');
+  const [fotoVisualizada, setFotoVisualizada] = useState(null);
+  const [adicionando, setAdicionando] = useState(false);
+
+  const carregarFotos = useCallback(async () => {
+    const salvas = await getProgressPhotos();
+    const validas = [];
+
+    for (const foto of salvas) {
+      try {
+        if (foto.uri && foto.uri.startsWith('file://')) {
+          const info = await FileSystem.getInfoAsync(foto.uri);
+          if (info.exists) {
+            validas.push(foto);
+          }
+        } else if (foto.uri) {
+          validas.push(foto);
+        }
+      } catch (error) {
+        validas.push(foto);
+      }
+    }
+
+    setFotos(validas);
+    if (validas.length !== salvas.length) {
+      await setProgressPhotos(validas);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarFotos();
+  }, [carregarFotos]);
+
+  useEffect(() => {
+    const carregarPerfil = async () => {
+      const perfil = await getUserProfile();
+      if (perfil?.nome) {
+        setNomeUsuario(perfil.nome);
+      }
+    };
+    carregarPerfil();
+  }, []);
+
+  const escolherFoto = async () => {
+    try {
+      const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissao.granted) {
+        if (permissao.canAskAgain === false) {
+          Alert.alert(
+            'Galeria bloqueada',
+            'Permita o acesso às fotos nas configurações para registrar seu progresso.',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Abrir configurações', onPress: () => Linking.openSettings() },
+            ]
+          );
+        } else {
+          Alert.alert('Permissão necessária', 'Precisamos acessar suas fotos para registrar seu progresso.');
+        }
+        return;
+      }
+
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.7,
+      });
+
+      if (resultado.canceled || !resultado.assets?.length) {
+        return;
+      }
+
+      setAdicionando(true);
+      const uriLocal = await salvarFotoLocal(resultado.assets[0].uri);
+      await addProgressPhoto({ uri: uriLocal });
+      await carregarFotos();
+    } catch (error) {
+      console.warn('Erro ao adicionar foto:', error);
+      Alert.alert('Erro', 'Não foi possível adicionar a foto.');
+    } finally {
+      setAdicionando(false);
+    }
+  };
+
+  const navegar = (telaNav) => {
+    setTela('evolucao');
+    navigation?.navigate(telaNav);
+  };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {tela === 'evolucao' ? (
-        <TelaEvolucao nomeUsuario="Nome" onEditar={() => setTela('editar')} />
+        <TelaEvolucao
+          nomeUsuario={nomeUsuario}
+          fotos={fotos}
+          adicionando={adicionando}
+          onEditar={() => setTela('editar')}
+          onAdicionarFoto={escolherFoto}
+          onVoltar={() => navigation?.goBack()}
+          onVerFoto={setFotoVisualizada}
+        />
       ) : (
         <TelaEditarPerfil onSalvar={() => setTela('evolucao')} />
       )}
 
-      <View style={styles.navBar}>
-        <View style={styles.navItem}>
+      <View style={[styles.navBar, { paddingBottom: (insets.bottom ?? 0) + 10 }]}>
+        <TouchableOpacity style={styles.navItem} onPress={() => navegar('TreinoHub')}>
           <Feather name="activity" size={20} color="#8E8E93" />
           <Text style={styles.navLabel}>Treino</Text>
-        </View>
-        <View style={styles.navItem}>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => navegar('Alimentacao')}>
           <Feather name="heart" size={20} color="#8E8E93" />
           <Text style={styles.navLabel}>Alimentação</Text>
-        </View>
-        <View style={styles.navItem}>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => navegar('Batimento')}>
           <Feather name="watch" size={20} color="#8E8E93" />
           <Text style={styles.navLabel}>Relógio</Text>
-        </View>
+        </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={fotoVisualizada !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFotoVisualizada(null)}
+      >
+        <View style={styles.modalFundo}>
+          <TouchableOpacity style={styles.modalFechar} onPress={() => setFotoVisualizada(null)} accessibilityLabel="Fechar foto">
+            <Feather name="x" size={26} color="#fff" />
+          </TouchableOpacity>
+          {fotoVisualizada ? (
+            <Image source={{ uri: fotoVisualizada }} style={styles.modalImagem} resizeMode="contain" />
+          ) : null}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -185,6 +373,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000', paddingHorizontal: 16 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginBottom: 16 },
   perfilRow: { flexDirection: 'row', alignItems: 'center' },
+  headerDireita: { flexDirection: 'row', alignItems: 'center' },
   avatarPequeno: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#1C1C1E', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
   headerNome: { color: '#fff', fontSize: 13 },
   logo: { color: '#3DDC5C', fontWeight: '700', fontSize: 15 },
@@ -193,8 +382,11 @@ const styles = StyleSheet.create({
   fotosRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   fotoCard: { width: '48%' },
   fotoVazia: { width: '100%', aspectRatio: 0.85, backgroundColor: '#1C1C1E', borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed', marginBottom: 6 },
+  fotoPreenchida: { width: '100%', aspectRatio: 0.85, backgroundColor: '#1C1C1E', borderRadius: 12, marginBottom: 6 },
   fotoLabel: { color: '#8E8E93', fontSize: 11, textAlign: 'center' },
+  fotoData: { color: '#3DDC5C', fontSize: 10, textAlign: 'center', marginTop: 2 },
   botaoVerde: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#3DDC5C', borderRadius: 24, paddingVertical: 12, marginBottom: 20 },
+  botaoVerdeOcupado: { opacity: 0.6 },
   botaoVerdeTexto: { color: '#000', fontSize: 13, fontWeight: '700', marginLeft: 6 },
   secaoTitulo: { color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 12 },
   medidasGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
@@ -202,8 +394,9 @@ const styles = StyleSheet.create({
   medidaLabel: { color: '#8E8E93', fontSize: 12, marginBottom: 4 },
   medidaValor: { color: '#fff', fontSize: 16, fontWeight: '700' },
   historicoMes: { color: '#8E8E93', fontSize: 12, marginBottom: 8 },
-  historicoRow: { flexDirection: 'row' },
-  historicoFotoVazia: { width: 56, height: 56, borderRadius: 8, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  historicoGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  historicoMini: { width: '23%', aspectRatio: 1, margin: '1%', borderRadius: 8, overflow: 'hidden', backgroundColor: '#1C1C1E' },
+  historicoImagem: { width: '100%', height: '100%' },
   avatarGrande: { width: 84, height: 84, borderRadius: 42, backgroundColor: '#1C1C1E', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   alterarFotoLabel: { color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 16 },
   modoBox: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
@@ -217,4 +410,7 @@ const styles = StyleSheet.create({
   navBar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#1C1C1E', backgroundColor: '#000' },
   navItem: { alignItems: 'center' },
   navLabel: { color: '#8E8E93', fontSize: 10, marginTop: 2 },
+  modalFundo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
+  modalImagem: { width: '100%', height: '100%' },
+  modalFechar: { position: 'absolute', top: 52, right: 20, zIndex: 10, backgroundColor: '#1C1C1E', borderRadius: 20, width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
 });

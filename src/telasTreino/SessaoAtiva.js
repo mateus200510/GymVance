@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert,
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Accelerometer } from 'expo-sensors';
 
 import { saveWorkoutHistory } from '../services/storage';
@@ -26,14 +26,14 @@ export default function SessaoAtiva({ navigation }) {
   ]);
   const [tempo] = useState('00:15:42');
   const [instabilidade, setInstabilidade] = useState('');
-  const [ultimaAceleracao, setUltimaAceleracao] = useState({ x: 0, y: 0, z: 0 });
+  const ultimaAceleracao = useRef({ x: 0, y: 0, z: 0 });
 
   useEffect(() => {
     let subscription;
 
     try {
       subscription = Accelerometer.addListener((data) => {
-        setUltimaAceleracao(data);
+        ultimaAceleracao.current = data;
       });
     } catch (error) {
       console.warn('Acelerômetro indisponível:', error);
@@ -61,9 +61,9 @@ export default function SessaoAtiva({ navigation }) {
 
   const handleConcluir = async () => {
     const magnitude = Math.sqrt(
-      ultimaAceleracao.x ** 2 +
-      ultimaAceleracao.y ** 2 +
-      ultimaAceleracao.z ** 2
+      ultimaAceleracao.current.x ** 2 +
+      ultimaAceleracao.current.y ** 2 +
+      ultimaAceleracao.current.z ** 2
     );
 
     if (Number.isFinite(magnitude) && magnitude > 2.0) {
@@ -89,8 +89,8 @@ export default function SessaoAtiva({ navigation }) {
     }
   };
 
-  return (
-    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
+return (
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation?.goBack()}>
           <Ionicons name="chevron-back" size={26} color={COLORS.text} />
@@ -123,7 +123,7 @@ export default function SessaoAtiva({ navigation }) {
 
       <Text style={styles.titulo}>Evolução Diária</Text>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.exercicioNome}>Supino Reto</Text>

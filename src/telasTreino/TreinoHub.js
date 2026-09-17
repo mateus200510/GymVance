@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', laranja: '#FF7A1A' };
 
@@ -19,56 +19,62 @@ export default function TreinoHub({ navigation }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
-      <View style={styles.header}>
-        <View style={styles.streak}>
-          <Ionicons name="flame" size={18} color={COLORS.laranja} />
-          <Text style={styles.streakTexto}>0</Text>
-        </View>
-        <View style={styles.userBox}>
-          <Text style={styles.tituloSecundario}>Evolução diária</Text>
-          <View style={styles.userRow}>
-            <View style={styles.avatar} />
-            <Text style={styles.userNome}>Lucas Miyashiro</Text>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View style={styles.streak}>
+            <Ionicons name="flame" size={18} color={COLORS.laranja} />
+            <Text style={styles.streakTexto}>0</Text>
+          </View>
+          <TouchableOpacity style={styles.userBox} onPress={() => navigation?.navigate('Perfil')} activeOpacity={0.7}>
+            <Text style={styles.tituloSecundario}>Evolução diária</Text>
+            <View style={styles.userRow}>
+              <View style={styles.avatar} />
+              <Text style={styles.userNome}>Lucas Miyashiro</Text>
+            </View>
+          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.rankingButton}
+              onPress={() => navigation?.navigate('Ranking')}
+              accessibilityLabel="Abrir ranking"
+            >
+              <Ionicons name="trophy-outline" size={18} color={COLORS.text} />
+              <Text style={styles.rankingText}>Ranking</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.proChip}
+              onPress={() => navigation?.navigate('Planos')}
+            >
+              <Text style={styles.proChipText}>PRO</Text>
+            </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.rankingButton}
-            onPress={() => navigation?.navigate('Ranking')}
-            accessibilityLabel="Abrir ranking"
-          >
-            <Ionicons name="trophy-outline" size={18} color={COLORS.text} />
-            <Text style={styles.rankingText}>Ranking</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.proChip}
-            onPress={() => navigation?.navigate('Planos')}
-          >
-            <Text style={styles.proChipText}>PRO</Text>
-          </TouchableOpacity>
+
+        <View style={styles.semanaRow}>
+          {SEMANA.map((d) => (
+            <View key={d.numero} style={styles.diaColuna}>
+              <Text style={styles.diaLetra}>{d.letra}</Text>
+              <Text style={styles.diaNumero}>{d.numero}</Text>
+            </View>
+          ))}
         </View>
-      </View>
 
-      <View style={styles.semanaRow}>
-        {SEMANA.map((d) => (
-          <View key={d.numero} style={styles.diaColuna}>
-            <Text style={styles.diaLetra}>{d.letra}</Text>
-            <Text style={styles.diaNumero}>{d.numero}</Text>
-          </View>
-        ))}
-      </View>
+        <Text style={styles.sessaoTitulo}>Sessão de Treino</Text>
 
-      <Text style={styles.sessaoTitulo}>Sessão de Treino</Text>
+        <TouchableOpacity style={styles.btnIniciar} onPress={() => navigation?.navigate('SessaoAtiva')}>
+          <Text style={styles.btnIniciarText}>Iniciar treino</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.btnIniciar} onPress={() => navigation?.navigate('SessaoAtiva')}>
-        <Text style={styles.btnIniciarText}>Iniciar treino</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.btnCriar} onPress={() => navigation?.navigate('NovaSessao')}>
-        <Ionicons name="add" size={18} color="#000" />
-        <Text style={styles.btnCriarText}>Criar sessão de treino</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.btnCriar} onPress={() => navigation?.navigate('NovaSessao')}>
+          <Ionicons name="add" size={18} color="#000" />
+          <Text style={styles.btnCriarText}>Criar sessão de treino</Text>
+        </TouchableOpacity>
+      </ScrollView>
 
       <BottomNav navigation={navigation} active="Treino" insets={insets} />
     </SafeAreaView>
@@ -139,10 +145,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#242424',
     paddingTop: 10,
     backgroundColor: COLORS.bg,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   navItem: { alignItems: 'center', gap: 2 },
   navLabel: { color: COLORS.muted, fontSize: 11 },

@@ -1,27 +1,31 @@
 import React from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   Image,
   TouchableOpacity,
+  ScrollView,
   StyleSheet,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Tela de "Calorias" do Gymvance
 // Mesma identidade visual da tela de Batimento, mas com a queima diária em destaque
 // e o BPM como informação secundária
 export default function Calorias({ navigation }) {
-  // Dados de exemplo - troque pelos valores vindos do sensor (ESP32 + MAX30102) e do treino
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const nomeUsuario = 'Lucas Miyashiro';
   const kcalQueimadas = 1365;
   const kcalMeta = 2500;
   const percentualMeta = Math.round((kcalQueimadas / kcalMeta) * 100);
   const bpmAtual = 70;
+  const circleSize = Math.min(Math.max(width * 0.68, 200), 260);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 8 }]}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
       {/* Cabeçalho */}
@@ -40,26 +44,28 @@ export default function Calorias({ navigation }) {
         </Text>
       </View>
 
-      {/* Círculo de calorias */}
-      <View style={styles.circuloWrapper}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={styles.circulo}
-          onPress={() => navigation?.navigate('Batimento')}
-        >
-          <View style={styles.badgePercentualCirculo}>
-            <Text style={styles.badgeTexto}>{percentualMeta}%</Text>
-          </View>
-          <Text style={styles.kcalNumero}>{kcalQueimadas.toLocaleString('pt-BR')}</Text>
-          <View style={styles.kcalLinha}>
-            <Text style={styles.chamaIcone}>🔥</Text>
-            <Text style={styles.kcalLabel}>KCAL</Text>
-          </View>
-          <Text style={styles.kcalMetaTexto}>
-            de {kcalMeta.toLocaleString('pt-BR')} kcal
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Conteúdo rolável */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Círculo de calorias */}
+        <View style={styles.circuloWrapper}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.circulo, { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }]}
+            onPress={() => navigation?.navigate('Batimento')}
+          >
+            <View style={styles.badgePercentualCirculo}>
+              <Text style={styles.badgeTexto}>{percentualMeta}%</Text>
+            </View>
+            <Text style={[styles.kcalNumero, { fontSize: Math.min(circleSize * 0.19, 50) }]}>{kcalQueimadas.toLocaleString('pt-BR')}</Text>
+            <View style={styles.kcalLinha}>
+              <Text style={styles.chamaIcone}>🔥</Text>
+              <Text style={styles.kcalLabel}>KCAL</Text>
+            </View>
+            <Text style={styles.kcalMetaTexto}>
+              de {kcalMeta.toLocaleString('pt-BR')} kcal
+            </Text>
+          </TouchableOpacity>
+        </View>
 
       {/* Batimento cardíaco */}
       <View style={styles.blocoBpm}>
@@ -75,9 +81,10 @@ export default function Calorias({ navigation }) {
           <Text style={styles.bpmUnidade}>BPM</Text>
         </View>
       </View>
+      </ScrollView>
 
       {/* Navegação inferior */}
-      <View style={styles.navInferior}>
+      <View style={[styles.navInferior, { paddingBottom: insets.bottom + 10 }]}>
         <TouchableOpacity
           style={styles.navItem}
           activeOpacity={0.7}
@@ -91,7 +98,7 @@ export default function Calorias({ navigation }) {
           activeOpacity={0.7}
           onPress={() => navigation?.navigate('Alimentacao')}
         >
-          <Image source={require('../../assets/alimentaçao.png')} style={styles.navIcone} />
+          <Image source={require('../../assets/alimentacao.png')} style={styles.navIcone} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -114,6 +121,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0D0D0D',
     paddingHorizontal: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   cabecalho: {
     flexDirection: 'row',
@@ -157,13 +170,10 @@ const styles = StyleSheet.create({
   },
   circuloWrapper: {
     alignItems: 'center',
-    marginTop: 36,
-    marginBottom: 28,
+    marginTop: 28,
+    marginBottom: 26,
   },
   circulo: {
-    width: 210,
-    height: 210,
-    borderRadius: 105,
     borderWidth: 1.5,
     borderColor: '#3A3A3A',
     alignItems: 'center',
@@ -264,10 +274,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     marginTop: 'auto',
-    marginBottom: 20,
     backgroundColor: CINZA_ESCURO,
     borderRadius: 40,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
+    marginBottom: 6,
   },
   navItem: {
     width: 48,

@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A' };
 
@@ -19,7 +19,7 @@ export default function PlanoSemanal({ navigation }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View>
           <Text style={styles.tituloSecundario}>Evolução diária</Text>
@@ -45,7 +45,7 @@ export default function PlanoSemanal({ navigation }) {
         <Ionicons name="chevron-back" size={22} color={COLORS.green} />
       </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 24, gap: 10 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24, gap: 10 }}>
         {DIAS.map((dia) => (
           <TouchableOpacity
             key={dia.nome}

@@ -1,16 +1,16 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', red: '#E5484D', text: '#FFFFFF', muted: '#8A8A8A', inputBg: '#2A2A2A' };
 
 export default function SessaoExercicios({ navigation }) {
   const insets = useSafeAreaInsets();
 
-  return (
-    <SafeAreaView style={[styles.safe, { paddingBottom: 12 + insets.bottom }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+return (
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.card}>
           <View style={styles.linhaReservas}>
             <Text style={styles.reservaTexto}>2 séries reservas</Text>
@@ -43,7 +43,7 @@ export default function SessaoExercicios({ navigation }) {
         </View>
       </ScrollView>
 
-      <BottomNav navigation={navigation} active="Treino" />
+      <BottomNav navigation={navigation} active="Treino" insets={insets} />
     </SafeAreaView>
   );
 }
@@ -69,7 +69,7 @@ function LinhaSerie({ numero, kg, reps, concluido, falhou }) {
   );
 }
 
-function BottomNav({ active, navigation }) {
+function BottomNav({ active, navigation, insets }) {
   const itens = [
     { nome: 'Treino', icon: 'barbell-outline', screen: 'TreinoHub' },
     { nome: 'Alimentação', icon: 'heart-outline', screen: 'Alimentacao' },
@@ -92,7 +92,8 @@ function BottomNav({ active, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16, paddingTop: 8 },
+  safe: { flex: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16 },
+  scrollContent: { paddingBottom: 24 },
   card: { backgroundColor: COLORS.card, borderRadius: 16, padding: 14, marginBottom: 14 },
   linhaReservas: { marginBottom: 6 },
   reservaTexto: { color: COLORS.muted, fontSize: 12 },

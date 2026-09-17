@@ -1,0 +1,256 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+} from 'react-native';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+
+const PODIO = [
+  { posicao: 2, nome: 'Gabriel S.', dias: 18, cor: '#B0B0B0' },
+  { posicao: 1, nome: 'Renata A.', dias: 24, cor: '#F4C430' },
+  { posicao: 3, nome: 'Thiago M.', dias: 15, cor: '#CD7F32' },
+];
+
+const LISTA = [
+  { posicao: 4, nome: 'Felipe Neto', treinos: 14, dias: 12, voce: false },
+  { posicao: 5, nome: 'Beatriz Sou', treinos: 11, dias: 9, voce: false },
+  { posicao: 6, nome: 'Carlos Ed', treinos: 10, dias: 7, voce: false },
+  { posicao: 7, nome: 'Lucas Miyashiro', treinos: 8, dias: 5, voce: true },
+];
+
+const ABAS = ['Semanal', 'Mensal', 'Geral'];
+
+export default function Ranking({ navigation }) {
+  const [abaAtiva, setAbaAtiva] = useState('Semanal');
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.streak}>
+            <MaterialCommunityIcons name="fire" size={22} color="#3DDC5C" />
+            <Text style={styles.streakText}>5</Text>
+          </View>
+          <Text style={styles.logo}>
+            Gym<Text style={styles.logoAccent}>vance</Text>
+          </Text>
+        </View>
+
+        <Text style={styles.titulo}>Ranking Geral</Text>
+        <Text style={styles.subtitulo}>Supere seus limites e conquiste o topo!</Text>
+
+        {/* Pódio */}
+        <View style={styles.podioRow}>
+          {PODIO.map((item) => (
+            <View
+              key={item.posicao}
+              style={[styles.podioItem, item.posicao === 1 && styles.podioItemDestaque]}
+            >
+              {item.posicao === 1 && (
+                <FontAwesome5
+                  name="crown"
+                  size={18}
+                  color="#F4C430"
+                  style={styles.coroa}
+                />
+              )}
+              <View
+                style={[
+                  styles.podioAvatar,
+                  { borderColor: item.cor, width: item.posicao === 1 ? 76 : 62, height: item.posicao === 1 ? 76 : 62, borderRadius: item.posicao === 1 ? 38 : 31 },
+                ]}
+              >
+                <Ionicons name="person-outline" size={item.posicao === 1 ? 30 : 24} color="#555" />
+              </View>
+              <View style={[styles.posicaoBadge, { backgroundColor: item.cor }]}>
+                <Text style={styles.posicaoBadgeText}>{item.posicao}º</Text>
+              </View>
+              <Text style={styles.podioNome}>{item.nome}</Text>
+              <View style={styles.podioDiasRow}>
+                <MaterialCommunityIcons name="fire" size={13} color="#3DDC5C" />
+                <Text style={styles.podioDias}>{item.dias} dias</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Abas */}
+        <View style={styles.abasRow}>
+          {ABAS.map((aba) => (
+            <TouchableOpacity
+              key={aba}
+              style={[styles.aba, abaAtiva === aba && styles.abaAtiva]}
+              onPress={() => setAbaAtiva(aba)}
+            >
+              <Text style={[styles.abaText, abaAtiva === aba && styles.abaTextAtiva]}>
+                {aba}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Lista */}
+        <View style={styles.lista}>
+          {LISTA.map((item) => (
+            <View
+              key={item.posicao}
+              style={[styles.linha, item.voce && styles.linhaVoce]}
+            >
+              <Text style={styles.linhaPosicao}>{item.posicao}</Text>
+              <View style={styles.linhaAvatar}>
+                <Ionicons name="person-outline" size={18} color="#555" />
+              </View>
+              <View style={styles.linhaInfo}>
+                <View style={styles.linhaNomeRow}>
+                  <Text style={styles.linhaNome}>{item.nome}</Text>
+                  {item.voce && (
+                    <View style={styles.voceBadge}>
+                      <Text style={styles.voceBadgeText}>VOCÊ</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.linhaTreinos}>{item.treinos} treinos concluídos</Text>
+              </View>
+              <View style={styles.linhaDiasRow}>
+                <MaterialCommunityIcons name="fire" size={14} color="#3DDC5C" />
+                <Text style={styles.linhaDias}>{item.dias}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* Bottom Nav */}
+      <View style={styles.bottomNav}>
+        <View style={styles.navItem}>
+          <MaterialCommunityIcons name="dumbbell" size={22} color="#fff" />
+          <Text style={styles.navLabel}>Treino</Text>
+        </View>
+        <View style={styles.navItem}>
+          <Ionicons name="heart-outline" size={22} color="#fff" />
+          <Text style={styles.navLabel}>Alimentação</Text>
+        </View>
+        <View style={styles.navItem}>
+          <Ionicons name="watch-outline" size={22} color="#fff" />
+          <Text style={styles.navLabel}>Relógio</Text>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#121212' },
+  scroll: { paddingHorizontal: 20, paddingBottom: 20 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  streak: { flexDirection: 'row', alignItems: 'center' },
+  streakText: { color: '#3DDC5C', fontSize: 20, fontWeight: 'bold', marginLeft: 4 },
+  logo: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  logoAccent: { color: '#3DDC5C' },
+  titulo: { color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  subtitulo: { color: '#999', fontSize: 13, marginBottom: 28 },
+  podioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-end',
+    marginBottom: 28,
+  },
+  podioItem: { alignItems: 'center', width: 90 },
+  podioItemDestaque: { marginBottom: 10 },
+  coroa: { marginBottom: 4 },
+  podioAvatar: {
+    borderWidth: 2,
+    backgroundColor: '#1E1E1E',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: -10,
+  },
+  posicaoBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#121212',
+    zIndex: 2,
+  },
+  posicaoBadgeText: { color: '#121212', fontWeight: 'bold', fontSize: 11 },
+  podioNome: { color: '#fff', fontWeight: 'bold', fontSize: 13, marginTop: 8 },
+  podioDiasRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  podioDias: { color: '#999', fontSize: 11, marginLeft: 3 },
+  abasRow: {
+    flexDirection: 'row',
+    backgroundColor: '#1A1A1A',
+    borderRadius: 10,
+    padding: 4,
+    marginBottom: 20,
+  },
+  aba: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  abaAtiva: { backgroundColor: '#3DDC5C' },
+  abaText: { color: '#999', fontSize: 13, fontWeight: '600' },
+  abaTextAtiva: { color: '#121212' },
+  lista: { gap: 10 },
+  linha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1A1A1A',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  linhaVoce: { borderColor: '#3DDC5C', backgroundColor: '#132318' },
+  linhaPosicao: { color: '#999', fontSize: 14, fontWeight: 'bold', width: 20 },
+  linhaAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#222',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  linhaInfo: { flex: 1 },
+  linhaNomeRow: { flexDirection: 'row', alignItems: 'center' },
+  linhaNome: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  voceBadge: {
+    backgroundColor: '#3DDC5C',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginLeft: 8,
+  },
+  voceBadgeText: { color: '#121212', fontSize: 9, fontWeight: 'bold' },
+  linhaTreinos: { color: '#888', fontSize: 12, marginTop: 2 },
+  linhaDiasRow: { flexDirection: 'row', alignItems: 'center' },
+  linhaDias: { color: '#3DDC5C', fontWeight: 'bold', fontSize: 14, marginLeft: 4 },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderTopColor: '#2A2A2A',
+    paddingVertical: 12,
+    backgroundColor: '#121212',
+  },
+  navItem: { alignItems: 'center' },
+  navLabel: { color: '#fff', fontSize: 11, marginTop: 4 },
+});

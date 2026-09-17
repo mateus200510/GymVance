@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   Image,
   TouchableOpacity,
+  ScrollView,
   StyleSheet,
   StatusBar,
   Alert,
   Linking,
+  useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 
 // Tela de "Batimento Cardíaco" do Gymvance
 // Mostra o BPM em destaque no círculo central e a queima diária logo abaixo
 export default function Batimento({ navigation }) {
-  // Dados de exemplo - troque pelos valores vindos do sensor (ESP32 + MAX30102)
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const nomeUsuario = 'Lucas Miyashiro';
   const bpmAtual = 70;
   const kcalQueimadas = 1365;
   const kcalMeta = 2500;
   const percentualMeta = Math.round((kcalQueimadas / kcalMeta) * 100);
+  const circleSize = Math.min(Math.max(width * 0.68, 200), 260);
   const [location, setLocation] = useState(null);
   const [precision, setPrecision] = useState(null);
   const [gpsError, setGpsError] = useState('');
@@ -73,7 +77,7 @@ export default function Batimento({ navigation }) {
           : '🔴 Baixa precisão';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 8 }]}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
       {/* Cabeçalho */}
@@ -92,20 +96,22 @@ export default function Batimento({ navigation }) {
         </Text>
       </View>
 
-      {/* Círculo de BPM */}
-      <View style={styles.circuloWrapper}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={styles.circulo}
-          onPress={() => navigation?.navigate('Calorias')}
-        >
-          <Text style={styles.bpmNumero}>{bpmAtual}</Text>
-          <View style={styles.bpmLinha}>
-            <Text style={styles.coracaoIcone}>♡</Text>
-            <Text style={styles.bpmLabel}>BPM</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+      {/* Conteúdo rolável */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Círculo de BPM */}
+        <View style={styles.circuloWrapper}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.circulo, { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }]}
+            onPress={() => navigation?.navigate('Calorias')}
+          >
+            <Text style={[styles.bpmNumero, { fontSize: Math.min(circleSize * 0.28, 60) }]}>{bpmAtual}</Text>
+            <View style={styles.bpmLinha}>
+              <Text style={styles.coracaoIcone}>♡</Text>
+              <Text style={styles.bpmLabel}>BPM</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
 
       {/* Queima diária */}
       <View style={styles.blocoQueima}>
@@ -145,9 +151,10 @@ export default function Batimento({ navigation }) {
           </>
         )}
       </View>
+      </ScrollView>
 
       {/* Navegação inferior */}
-      <View style={styles.navInferior}>
+      <View style={[styles.navInferior, { paddingBottom: insets.bottom + 10 }]}>
         <TouchableOpacity
           style={styles.navItem}
           activeOpacity={0.7}
@@ -161,7 +168,7 @@ export default function Batimento({ navigation }) {
           activeOpacity={0.7}
           onPress={() => navigation?.navigate('Alimentacao')}
         >
-          <Image source={require('../../assets/alimentaçao.png')} style={styles.navIcone} />
+          <Image source={require('../../assets/alimentacao.png')} style={styles.navIcone} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -184,6 +191,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0D0D0D',
     paddingHorizontal: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   cabecalho: {
     flexDirection: 'row',
@@ -227,13 +240,10 @@ const styles = StyleSheet.create({
   },
   circuloWrapper: {
     alignItems: 'center',
-    marginTop: 36,
-    marginBottom: 28,
+    marginTop: 28,
+    marginBottom: 26,
   },
   circulo: {
-    width: 210,
-    height: 210,
-    borderRadius: 105,
     borderWidth: 1.5,
     borderColor: '#3A3A3A',
     alignItems: 'center',
@@ -361,10 +371,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     marginTop: 'auto',
-    marginBottom: 20,
     backgroundColor: CINZA_ESCURO,
     borderRadius: 40,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
+    marginBottom: 6,
   },
   navItem: {
     width: 48,

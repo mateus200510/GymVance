@@ -6,13 +6,15 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  SafeAreaView,
   Alert,
   Linking,
   Image,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { getProgressPhotos, saveProgressPhoto } from '../services/storage';
 
 const DIAS_SEMANA = [
   { label: 'Seg', data: 20 },
@@ -59,7 +61,11 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada }) {
   const [pergunta, setPergunta] = useState('');
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.perfilIcone}>
@@ -174,7 +180,7 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada }) {
   );
 }
 
-function TelaGaleria({ onVoltar }) {
+function TelaGaleria({ onVoltar, fotos = [] }) {
   return (
     <View style={styles.container}>
       <View style={styles.galeriaHeader}>
@@ -188,19 +194,21 @@ function TelaGaleria({ onVoltar }) {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {FOTOS_REFEICOES.map((grupo) => (
-          <View key={grupo.data} style={{ marginBottom: 20 }}>
-            <Text style={styles.galeriaData}>{grupo.data}</Text>
-            <View style={styles.galeriaGrid}>
-              {grupo.fotos.map((foto, index) => (
-                <View key={index} style={styles.galeriaFotoVazia}>
-                  <Feather name="image" size={22} color="#3A3A3C" />
-                </View>
-              ))}
-            </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.galeriaScrollContent}>
+        {fotos.length === 0 ? (
+          <View style={styles.galeriaVazia}>
+            <Feather name="image" size={28} color="#3A3A3C" />
+            <Text style={styles.galeriaVaziaTexto}>Nenhuma foto salva ainda.</Text>
           </View>
-        ))}
+        ) : (
+          <View style={styles.galeriaGrid}>
+            {fotos.map((foto) => (
+              <View key={foto.id} style={styles.galeriaFotoWrapper}>
+                <Image source={{ uri: foto.uri }} style={styles.galeriaFotoReal} resizeMode="cover" />
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.navBar}>
@@ -226,16 +234,50 @@ function TelaGaleria({ onVoltar }) {
 }
 
 export default function Alimentacao({ navigation }) {
-  const [tela, setTela] = useState('dashboard'); // 'dashboard' | 'galeria' | 'camera'
+  const [tela, setTela] = useState('dashboard');
   const [cameraPermission, requestPermission] = useCameraPermissions();
   const [fotoCapturada, setFotoCapturada] = useState(null);
+  const [fotosGaleria, setFotosGaleria] = useState([]);
   const cameraRef = useRef(null);
+  const insets = useSafeAreaInsets();
+
+  const carregarGaleria = async () => {
+    const fotos = await getProgressPhotos();
+    setFotosGaleria(fotos);
+    if (fotos.length > 0) {
+      setFotoCapturada(fotos[0].uri);
+    }
+  };
 
   useEffect(() => {
-    if (!cameraPermission) {
-      requestPermission();
+    carregarGaleria();
+  }, []);
+
+  const abrirGaleria = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissão necessária', 'Precisamos acessar suas fotos para salvar seu progresso.');
+      if (!permission.canAskAgain) {
+        Linking.openSettings();
+      }
+      return;
     }
-  }, [cameraPermission, requestPermission]);
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.85,
+    });
+
+    if (result.canceled || !result.assets?.[0]?.uri) {
+      return;
+    }
+
+    const salvas = await saveProgressPhoto(result.assets[0].uri, { origem: 'galeria' });
+    setFotosGaleria(salvas);
+    setFotoCapturada(salvas[0]?.uri ?? result.assets[0].uri);
+    setTela('galeria');
+  };
 
   const abrirCamera = async () => {
     if (!cameraPermission) {
@@ -262,9 +304,11 @@ export default function Alimentacao({ navigation }) {
     }
 
     try {
-      const photo = await cameraRef.current.takePictureAsync();
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8, exif: false });
       if (photo?.uri) {
-        setFotoCapturada(photo.uri);
+        const salvas = await saveProgressPhoto(photo.uri, { origem: 'camera' });
+        setFotosGaleria(salvas);
+        setFotoCapturada(salvas[0]?.uri ?? photo.uri);
       }
       setTela('dashboard');
     } catch (error) {
@@ -273,15 +317,15 @@ export default function Alimentacao({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { paddingBottom: insets.bottom }]}>
       {tela === 'dashboard' ? (
         <TelaDashboard
-          onAbrirGaleria={() => setTela('galeria')}
+          onAbrirGaleria={abrirGaleria}
           onAbrirCamera={abrirCamera}
           fotoCapturada={fotoCapturada}
         />
       ) : tela === 'galeria' ? (
-        <TelaGaleria onVoltar={() => setTela('dashboard')} />
+        <TelaGaleria fotos={fotosGaleria} onVoltar={() => setTela('dashboard')} />
       ) : (
         <View style={styles.cameraContainer}>
           <CameraView ref={cameraRef} style={styles.cameraView} facing="back" />
@@ -297,7 +341,7 @@ export default function Alimentacao({ navigation }) {
       )}
 
       {tela === 'dashboard' && (
-        <View style={styles.navBar}>
+        <View style={[styles.navBar, { paddingBottom: 12 }]}>
           <TouchableOpacity style={styles.navItem} onPress={() => navigation?.navigate('TreinoHub')}>
             <Feather name="activity" size={20} color="#8E8E93" />
             <Text style={styles.navLabel}>Treino</Text>
