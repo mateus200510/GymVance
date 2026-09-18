@@ -14,7 +14,7 @@ import { getUserProfile, saveUserProfile } from '../services/storage';
 
 const CM_PARA_IN = 0.393701;
 
-export default function AlturaScreen({ navigation, route }) {
+export default function AlturaScreen({ navigation }) {
   const [altura, setAltura] = useState('');
   const [unidade, setUnidade] = useState('cm'); // 'cm' | 'in'
 
@@ -27,13 +27,10 @@ export default function AlturaScreen({ navigation, route }) {
       if (perfil?.alturaUnidade) {
         setUnidade(perfil.alturaUnidade);
       }
-      if (route?.params?.peso) {
-        setAltura((prev) => prev || String(route.params.peso));
-      }
     };
 
     carregarPerfil();
-  }, [route]);
+  }, []);
 
   function trocarUnidade() {
     const novaUnidade = unidade === 'cm' ? 'in' : 'cm';
@@ -64,7 +61,7 @@ export default function AlturaScreen({ navigation, route }) {
 
       <View style={styles.progressBar} />
 
-      <Text style={styles.step}>Etapa 4 de 4</Text>
+      <Text style={styles.step}>Etapa 3 de 4</Text>
       <Text style={styles.title}>Qual sua altura?</Text>
 
       <Text style={styles.label}>Altura</Text>

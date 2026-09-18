@@ -37,7 +37,8 @@
         {
           "cameraPermission": "O GymVance usa a câmera para registrar suas refeições e progresso."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

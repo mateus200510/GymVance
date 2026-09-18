@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 24,
   },
   logoContainer: {
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   planosRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 6,
     marginBottom: 28,
   },
   planoCard: {
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E2E2',
     borderRadius: 14,
     paddingVertical: 14,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     minHeight: 130,
   },
   planoCardSelecionado: {

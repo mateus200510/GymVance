@@ -23,16 +23,10 @@ import PesoScreen from './src/conversoes/peso';
 import AlturaScreen from './src/conversoes/altura';
 
 import TreinoHub from './src/telasTreino/TreinoHub';
-import PlanoSemanal from './src/telasTreino/PlanoSemanal';
-import SessaoExercicios from './src/telasTreino/SessaoExercicios';
 import NovaSessao from './src/telasTreino/NovaSessao';
-import CalendarioMensal from './src/telasTreino/CalendarioMensal';
-import NovaSessaoComExercicio from './src/telasTreino/NovaSessaoComExercicio';
 import SessaoAtiva from './src/telasTreino/SessaoAtiva';
 
 import Mensal from './src/telasPlanos/mensal';
-import Anual from './src/telasPlanos/anual';
-import Eterno from './src/telasPlanos/eterno';
 import Alimentacao from './src/alimentacao/alimentacao';
 import Batimento from './src/Relogio/batimento';
 import Calorias from './src/Relogio/calorias';
@@ -53,7 +47,7 @@ function SplashScreen({ navigation }) {
   return (
     <View style={styles.splash}>
       <Image
-        source={require('./assets/FundoPretoRestoBranco.jpeg')}
+        source={require('./assets/FundoPretoRestoBranco-removebg-preview.png')}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -117,21 +111,6 @@ export default function App() {
         />
 
         <Stack.Screen
-          name="Mensal"
-          component={Mensal}
-        />
-
-        <Stack.Screen
-          name="Anual"
-          component={Anual}
-        />
-
-        <Stack.Screen
-          name="Eterno"
-          component={Eterno}
-        />
-
-        <Stack.Screen
           name="Alimentacao"
           component={Alimentacao}
         />
@@ -157,28 +136,8 @@ export default function App() {
         />
 
         <Stack.Screen
-          name="PlanoSemanal"
-          component={PlanoSemanal}
-        />
-
-        <Stack.Screen
-          name="SessaoExercicios"
-          component={SessaoExercicios}
-        />
-
-        <Stack.Screen
           name="NovaSessao"
           component={NovaSessao}
-        />
-
-        <Stack.Screen
-          name="CalendarioMensal"
-          component={CalendarioMensal}
-        />
-
-        <Stack.Screen
-          name="NovaSessaoComExercicio"
-          component={NovaSessaoComExercicio}
         />
 
         <Stack.Screen
@@ -201,7 +160,7 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    width: 250,
-    height: 250,
+    width: 280,
+    height: 180,
   },
 });

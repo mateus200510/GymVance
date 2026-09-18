@@ -61,7 +61,7 @@ export default function PesoScreen({ navigation }) {
 
       <View style={styles.progressBar} />
 
-      <Text style={styles.step}>Etapa 4 de 4</Text>
+      <Text style={styles.step}>Etapa 2 de 4</Text>
       <Text style={styles.title}>Qual seu peso?</Text>
 
       <Text style={styles.label}>Peso</Text>
@@ -94,7 +94,7 @@ export default function PesoScreen({ navigation }) {
           }
 
           await saveUserProfile({ peso: valor, pesoUnidade: unidade });
-          navigation.navigate('Altura', { peso: String(valor), unidade });
+          navigation.navigate('Altura');
         }}
       >
         <Text style={styles.advanceText}>Avançar</Text>

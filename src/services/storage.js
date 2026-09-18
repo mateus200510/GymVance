@@ -19,6 +19,53 @@ function safeJsonParse(raw, fallback) {
   }
 }
 
+export function normalizarDataNascimento(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    const soDigitos = value.replace(/\D/g, '');
+
+    if (/^\d{8}$/.test(soDigitos)) {
+      const dia = soDigitos.slice(0, 2);
+      const mes = soDigitos.slice(2, 4);
+      const ano = soDigitos.slice(4, 8);
+      return `${ano}-${mes}-${dia}`;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return value;
+    }
+
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+      const [dia, mes, ano] = value.split('/');
+      return `${ano}-${mes}-${dia}`;
+    }
+  }
+
+  return null;
+}
+
+export function formatarDataNascimento(value) {
+  const iso = normalizarDataNascimento(value);
+  if (!iso) {
+    return '';
+  }
+
+  const [ano, mes, dia] = iso.split('-');
+  if (!ano || !mes || !dia) {
+    return '';
+  }
+
+  return `${dia}/${mes}/${ano}`;
+}
+
+export function getNomeUsuarioPadrao(perfil = {}) {
+  const nome = String(perfil?.nome || '').trim();
+  return nome || 'Usuário';
+}
+
 async function ensureFileSystemUri(uri) {
   if (!uri) {
     return uri;
@@ -89,6 +136,22 @@ export async function saveUserProfile(profile) {
   try {
     const current = await getUserProfile();
     const next = { ...current, ...profile };
+
+    if (profile?.dataNascimento || current?.dataNascimento) {
+      const dataIso = normalizarDataNascimento(profile?.dataNascimento ?? current?.dataNascimento);
+      if (dataIso) {
+        next.dataNascimento = dataIso;
+      }
+    }
+
+    if (profile?.nome !== undefined) {
+      next.nome = String(profile.nome).trim();
+    }
+
+    if (profile?.email !== undefined) {
+      next.email = String(profile.email).trim();
+    }
+
     await AsyncStorage.setItem(USER_PROFILE_KEY, JSON.stringify(next));
     return next;
   } catch (error) {
@@ -100,7 +163,18 @@ export async function saveUserProfile(profile) {
 export async function getUserProfile() {
   try {
     const raw = await AsyncStorage.getItem(USER_PROFILE_KEY);
-    return safeJsonParse(raw, {});
+    const perfil = safeJsonParse(raw, {});
+
+    if (!perfil || typeof perfil !== 'object') {
+      return {};
+    }
+
+    const dataNascimento = normalizarDataNascimento(perfil.dataNascimento || perfil.data || null);
+    if (dataNascimento) {
+      perfil.dataNascimento = dataNascimento;
+    }
+
+    return perfil;
   } catch (error) {
     console.warn('Erro ao ler perfil do usuário:', error);
     return {};
@@ -124,7 +198,7 @@ export async function saveProgressPhoto(uri, metadata = {}) {
     const next = [{
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       uri: normalizedUri,
-      createdAt: new Date().toISOString(),
+      data: new Date().toISOString(),
       ...metadata,
     }, ...current].slice(0, 30);
 
@@ -132,6 +206,34 @@ export async function saveProgressPhoto(uri, metadata = {}) {
     return next;
   } catch (error) {
     console.warn('Erro ao salvar foto de progresso:', error);
+    return [];
+  }
+}
+
+export async function addProgressPhoto(photo) {
+  try {
+    const current = await getProgressPhotos();
+    const next = [{
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      data: new Date().toISOString(),
+      ...photo,
+    }, ...current].slice(0, 30);
+
+    await AsyncStorage.setItem(PROGRESS_PHOTOS_KEY, JSON.stringify(next));
+    return next;
+  } catch (error) {
+    console.warn('Erro ao salvar foto de progresso:', error);
+    return [];
+  }
+}
+
+export async function setProgressPhotos(photos) {
+  try {
+    const lista = photos || [];
+    await AsyncStorage.setItem(PROGRESS_PHOTOS_KEY, JSON.stringify(lista));
+    return lista;
+  } catch (error) {
+    console.warn('Erro ao atualizar fotos de progresso:', error);
     return [];
   }
 }

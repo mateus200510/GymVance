@@ -12,12 +12,13 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 
-import { getProgressPhotos, addProgressPhoto, setProgressPhotos, getUserProfile } from '../services/storage';
+import BottomNavBar from '../components/BottomNavBar';
+import { getProgressPhotos, addProgressPhoto, setProgressPhotos, getUserProfile, saveUserProfile } from '../services/storage';
 
 // Medidas ficam vazias (sem valores/variações de exemplo) até o usuário registrar.
 const MEDIDAS = [
@@ -165,6 +166,16 @@ function TelaEditarPerfil({ onSalvar }) {
   const [email, setEmail] = useState('');
   const [modoAtivo, setModoAtivo] = useState(false);
 
+  useEffect(() => {
+    const carregarPerfil = async () => {
+      const perfil = await getUserProfile();
+      setNome(perfil?.nome || '');
+      setEmail(perfil?.email || '');
+    };
+
+    carregarPerfil();
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -216,7 +227,13 @@ function TelaEditarPerfil({ onSalvar }) {
           />
         </View>
 
-        <TouchableOpacity style={[styles.botaoVerde, { alignSelf: 'stretch', justifyContent: 'center' }]} onPress={onSalvar}>
+        <TouchableOpacity
+          style={[styles.botaoVerde, { alignSelf: 'stretch', justifyContent: 'center' }]}
+          onPress={async () => {
+            const atualizado = await saveUserProfile({ nome, email });
+            onSalvar(atualizado);
+          }}
+        >
           <Text style={styles.botaoVerdeTexto}>Salvar Evolução</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -225,31 +242,34 @@ function TelaEditarPerfil({ onSalvar }) {
 }
 
 export default function Perfil({ navigation }) {
-  const insets = useSafeAreaInsets();
   const [tela, setTela] = useState('evolucao'); // 'evolucao' | 'editar'
   const [fotos, setFotos] = useState([]);
-  const [nomeUsuario, setNomeUsuario] = useState('Nome');
+  const [nomeUsuario, setNomeUsuario] = useState('Usuário');
   const [fotoVisualizada, setFotoVisualizada] = useState(null);
   const [adicionando, setAdicionando] = useState(false);
 
   const carregarFotos = useCallback(async () => {
     const salvas = await getProgressPhotos();
-    const validas = [];
 
-    for (const foto of salvas) {
-      try {
-        if (foto.uri && foto.uri.startsWith('file://')) {
-          const info = await FileSystem.getInfoAsync(foto.uri);
-          if (info.exists) {
-            validas.push(foto);
+    const resultados = await Promise.all(
+      salvas.map(async (foto) => {
+        try {
+          if (foto.uri && foto.uri.startsWith('file://')) {
+            const info = await FileSystem.getInfoAsync(foto.uri);
+            if (info.exists) {
+              return foto;
+            }
+          } else if (foto.uri) {
+            return foto;
           }
-        } else if (foto.uri) {
-          validas.push(foto);
+        } catch (error) {
+          return foto;
         }
-      } catch (error) {
-        validas.push(foto);
-      }
-    }
+        return null;
+      })
+    );
+
+    const validas = resultados.filter(Boolean);
 
     setFotos(validas);
     if (validas.length !== salvas.length) {
@@ -313,11 +333,6 @@ export default function Perfil({ navigation }) {
     }
   };
 
-  const navegar = (telaNav) => {
-    setTela('evolucao');
-    navigation?.navigate(telaNav);
-  };
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {tela === 'evolucao' ? (
@@ -331,23 +346,17 @@ export default function Perfil({ navigation }) {
           onVerFoto={setFotoVisualizada}
         />
       ) : (
-        <TelaEditarPerfil onSalvar={() => setTela('evolucao')} />
+        <TelaEditarPerfil
+          onSalvar={(perfil) => {
+            if (perfil?.nome) {
+              setNomeUsuario(perfil.nome);
+            }
+            setTela('evolucao');
+          }}
+        />
       )}
 
-      <View style={[styles.navBar, { paddingBottom: (insets.bottom ?? 0) + 10 }]}>
-        <TouchableOpacity style={styles.navItem} onPress={() => navegar('TreinoHub')}>
-          <Feather name="activity" size={20} color="#8E8E93" />
-          <Text style={styles.navLabel}>Treino</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navegar('Alimentacao')}>
-          <Feather name="heart" size={20} color="#8E8E93" />
-          <Text style={styles.navLabel}>Alimentação</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navegar('Batimento')}>
-          <Feather name="watch" size={20} color="#8E8E93" />
-          <Text style={styles.navLabel}>Relógio</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNavBar activeTab="treino" />
 
       <Modal
         visible={fotoVisualizada !== null}
@@ -407,9 +416,6 @@ const styles = StyleSheet.create({
   campoBox: { alignSelf: 'stretch', marginBottom: 14 },
   campoLabel: { color: '#8E8E93', fontSize: 12, marginBottom: 6 },
   campoInput: { backgroundColor: '#1C1C1E', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, color: '#fff', fontSize: 14, borderWidth: 1, borderColor: '#2C2C2E' },
-  navBar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#1C1C1E', backgroundColor: '#000' },
-  navItem: { alignItems: 'center' },
-  navLabel: { color: '#8E8E93', fontSize: 10, marginTop: 2 },
   modalFundo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
   modalImagem: { width: '100%', height: '100%' },
   modalFechar: { position: 'absolute', top: 52, right: 20, zIndex: 10, backgroundColor: '#1C1C1E', borderRadius: 20, width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },

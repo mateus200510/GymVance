@@ -1,7 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+
+import BottomNavBar from '../components/BottomNavBar';
+import { useNomeUsuario } from '../services/useUserProfile';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', laranja: '#FF7A1A' };
 
@@ -16,7 +19,7 @@ const SEMANA = [
 ];
 
 export default function TreinoHub({ navigation }) {
-  const insets = useSafeAreaInsets();
+  const nomeUsuario = useNomeUsuario();
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -34,7 +37,7 @@ export default function TreinoHub({ navigation }) {
             <Text style={styles.tituloSecundario}>Evolução diária</Text>
             <View style={styles.userRow}>
               <View style={styles.avatar} />
-              <Text style={styles.userNome}>Lucas Miyashiro</Text>
+              <Text style={styles.userNome} numberOfLines={1} ellipsizeMode="tail">{nomeUsuario}</Text>
             </View>
           </TouchableOpacity>
           <View style={styles.headerActions}>
@@ -76,30 +79,8 @@ export default function TreinoHub({ navigation }) {
         </TouchableOpacity>
       </ScrollView>
 
-      <BottomNav navigation={navigation} active="Treino" insets={insets} />
+      <BottomNavBar activeTab="treino" />
     </SafeAreaView>
-  );
-}
-
-function BottomNav({ active, navigation, insets }) {
-  const itens = [
-    { nome: 'Treino', icon: 'barbell-outline', screen: 'TreinoHub' },
-    { nome: 'Alimentação', icon: 'heart-outline', screen: 'Alimentacao' },
-    { nome: 'Relógio', icon: 'watch-outline', screen: 'Batimento' },
-  ];
-  return (
-    <View style={[styles.bottomNav, { paddingBottom: (insets?.bottom ?? 0) + 10 }]}>
-      {itens.map((it) => (
-        <TouchableOpacity
-          key={it.nome}
-          style={styles.navItem}
-          onPress={() => navigation?.navigate(it.screen)}
-        >
-          <Ionicons name={it.icon} size={20} color={it.nome === active ? COLORS.green : COLORS.muted} />
-          <Text style={[styles.navLabel, it.nome === active && { color: COLORS.green }]}>{it.nome}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
   );
 }
 
@@ -137,15 +118,4 @@ const styles = StyleSheet.create({
   btnIniciarText: { color: COLORS.text, fontWeight: '700' },
   btnCriar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 14, borderRadius: 12 },
   btnCriarText: { color: '#000', fontWeight: '700' },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#242424',
-    paddingTop: 10,
-    backgroundColor: COLORS.bg,
-  },
-  navItem: { alignItems: 'center', gap: 2 },
-  navLabel: { color: COLORS.muted, fontSize: 11 },
 });

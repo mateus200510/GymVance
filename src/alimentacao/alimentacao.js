@@ -10,11 +10,13 @@ import {
   Linking,
   Image,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { getProgressPhotos, saveProgressPhoto } from '../services/storage';
+
+import BottomNavBar from '../components/BottomNavBar';
 
 const DIAS_SEMANA = [
   { label: 'Seg', data: 20 },
@@ -239,7 +241,6 @@ export default function Alimentacao({ navigation }) {
   const [fotoCapturada, setFotoCapturada] = useState(null);
   const [fotosGaleria, setFotosGaleria] = useState([]);
   const cameraRef = useRef(null);
-  const insets = useSafeAreaInsets();
 
   const carregarGaleria = async () => {
     const fotos = await getProgressPhotos();
@@ -280,10 +281,13 @@ export default function Alimentacao({ navigation }) {
   };
 
   const abrirCamera = async () => {
-    if (!cameraPermission) {
-      const permission = await requestPermission();
-      if (!permission.granted) {
-        if (permission.canAskAgain === false) {
+    let permissao = cameraPermission;
+
+    if (!permissao) {
+      permissao = await requestPermission();
+
+      if (!permissao.granted) {
+        if (permissao.canAskAgain === false) {
           Alert.alert('Câmera indisponível', 'Abra as configurações do dispositivo para permitir o acesso à câmera.');
           Linking.openSettings();
           return;
@@ -293,7 +297,7 @@ export default function Alimentacao({ navigation }) {
       }
     }
 
-    if (cameraPermission?.granted) {
+    if (permissao?.granted) {
       setTela('camera');
     }
   };
@@ -317,7 +321,7 @@ export default function Alimentacao({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingBottom: insets.bottom }]}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {tela === 'dashboard' ? (
         <TelaDashboard
           onAbrirGaleria={abrirGaleria}
@@ -340,21 +344,7 @@ export default function Alimentacao({ navigation }) {
         </View>
       )}
 
-      {tela === 'dashboard' && (
-        <View style={[styles.navBar, { paddingBottom: 12 }]}>
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation?.navigate('TreinoHub')}>
-            <Feather name="activity" size={20} color="#8E8E93" />
-            <Text style={styles.navLabel}>Treino</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.navItem, styles.navItemAtivo]} onPress={() => setTela('dashboard')}>
-            <Feather name="heart" size={20} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation?.navigate('Batimento')}>
-            <Feather name="watch" size={20} color="#8E8E93" />
-            <Text style={styles.navLabel}>Relógio</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {tela === 'dashboard' && <BottomNavBar activeTab="alimentacao" />}
     </SafeAreaView>
   );
 }
@@ -417,6 +407,5 @@ const styles = StyleSheet.create({
   galeriaFotoVazia: { width: '23%', aspectRatio: 1, margin: '1%', backgroundColor: '#1C1C1E', borderRadius: 6, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed' },
   navBar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#1C1C1E', backgroundColor: '#000' },
   navItem: { alignItems: 'center' },
-  navItemAtivo: { backgroundColor: '#3DDC5C', width: 44, height: 44, borderRadius: 22, justifyContent: 'center' },
   navLabel: { color: '#8E8E93', fontSize: 10, marginTop: 2 },
 });

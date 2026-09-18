@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Accelerometer } from 'expo-sensors';
 
+import BottomNavBar from '../components/BottomNavBar';
 import { saveWorkoutHistory } from '../services/storage';
 
 const COLORS = {
@@ -19,7 +20,6 @@ const COLORS = {
 };
 
 export default function SessaoAtiva({ navigation }) {
-  const insets = useSafeAreaInsets();
   const [series, setSeries] = useState([
     { id: 1, kg: '80', reps: '8', concluido: true, falhou: false, nota: '2 séries reservas' },
     { id: 2, kg: '100', reps: '5', concluido: false, falhou: true, nota: '' },
@@ -82,7 +82,7 @@ export default function SessaoAtiva({ navigation }) {
 
       await saveWorkoutHistory(treino);
       Alert.alert('Treino concluído', 'Seu treino foi salvo no histórico local.');
-      navigation?.navigate('TreinoHub');
+      navigation?.replace('TreinoHub');
     } catch (error) {
       console.warn('Erro ao salvar treino:', error);
       Alert.alert('Erro', 'Não foi possível salvar o treino localmente.');
@@ -123,7 +123,7 @@ return (
 
       <Text style={styles.titulo}>Evolução Diária</Text>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.exercicioNome}>Supino Reto</Text>
@@ -194,36 +194,8 @@ return (
         </TouchableOpacity>
       </View>
 
-      <BottomNav navigation={navigation} active="Treino" insets={insets} />
+      <BottomNavBar activeTab="treino" />
     </SafeAreaView>
-  );
-}
-
-function BottomNav({ active, navigation, insets }) {
-  const itens = [
-    { nome: 'Treino', icon: 'barbell-outline', screen: 'TreinoHub' },
-    { nome: 'Alimentação', icon: 'heart-outline', screen: 'Alimentacao' },
-    { nome: 'Relógio', icon: 'watch-outline', screen: 'Batimento' },
-  ];
-  return (
-    <View style={[styles.bottomNav, { paddingBottom: (insets?.bottom ?? 0) + 10 }]}>
-      {itens.map((it) => (
-        <TouchableOpacity
-          key={it.nome}
-          style={styles.navItem}
-          onPress={() => navigation?.navigate(it.screen)}
-        >
-          <Ionicons
-            name={it.icon}
-            size={20}
-            color={it.nome === active ? COLORS.green : COLORS.muted}
-          />
-          <Text style={[styles.navLabel, it.nome === active && { color: COLORS.green }]}>
-            {it.nome}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
   );
 }
 
@@ -264,7 +236,4 @@ const styles = StyleSheet.create({
   btnExercicio: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 12, borderRadius: 12 },
   btnExercicioText: { color: '#000', fontWeight: '700' },
   btnDescartarTreino: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.card, paddingVertical: 12, borderRadius: 12 },
-  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingTop: 10 },
-  navItem: { alignItems: 'center', gap: 2 },
-  navLabel: { color: COLORS.muted, fontSize: 11 },
 });

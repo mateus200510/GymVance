@@ -7,7 +7,11 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import BottomNavBar from '../components/BottomNavBar';
+import { useNomeUsuario } from '../services/useUserProfile';
+import { getDadosRankingSimulado } from '../services/metricas';
 
 const PODIO = [
   { posicao: 2, nome: 'Gabriel S.', dias: 18, cor: '#B0B0B0' },
@@ -15,33 +19,16 @@ const PODIO = [
   { posicao: 3, nome: 'Thiago M.', dias: 15, cor: '#CD7F32' },
 ];
 
-const LISTA = [
-  { posicao: 4, nome: 'Felipe Neto', treinos: 14, dias: 12, voce: false },
-  { posicao: 5, nome: 'Beatriz Sou', treinos: 11, dias: 9, voce: false },
-  { posicao: 6, nome: 'Carlos Ed', treinos: 10, dias: 7, voce: false },
-  { posicao: 7, nome: 'Lucas Miyashiro', treinos: 8, dias: 5, voce: true },
-];
-
 const ABAS = ['Semanal', 'Mensal', 'Geral'];
 
 export default function Ranking({ navigation }) {
-  const insets = useSafeAreaInsets();
+  const nomeUsuario = useNomeUsuario();
   const [abaAtiva, setAbaAtiva] = useState('Semanal');
   const [dadosRanking, setDadosRanking] = useState([]);
 
   React.useEffect(() => {
-    const base = [
-      { posicao: 1, nome: 'Renata A.', treinos: 24, dias: 24, voce: false },
-      { posicao: 2, nome: 'Gabriel S.', treinos: 18, dias: 18, voce: false },
-      { posicao: 3, nome: 'Thiago M.', treinos: 15, dias: 15, voce: false },
-      { posicao: 4, nome: 'Felipe Neto', treinos: 14, dias: 12, voce: false },
-      { posicao: 5, nome: 'Beatriz Sou', treinos: 11, dias: 9, voce: false },
-      { posicao: 6, nome: 'Carlos Ed', treinos: 10, dias: 7, voce: false },
-      { posicao: 7, nome: 'Lucas Miyashiro', treinos: 8, dias: 5, voce: true },
-    ];
-
-    setDadosRanking(base);
-  }, []);
+    setDadosRanking(getDadosRankingSimulado(nomeUsuario));
+  }, [nomeUsuario]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -140,20 +127,7 @@ export default function Ranking({ navigation }) {
         </View>
       </ScrollView>
 
-      <View style={[styles.bottomNav, { paddingBottom: insets.bottom + 10 }]}>
-        <TouchableOpacity onPress={() => navigation?.navigate('TreinoHub')} style={styles.navItem}>
-          <MaterialCommunityIcons name="dumbbell" size={22} color="#fff" />
-          <Text style={styles.navLabel}>Treino</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation?.navigate('Alimentacao')} style={styles.navItem}>
-          <Ionicons name="heart-outline" size={22} color="#fff" />
-          <Text style={styles.navLabel}>Alimentação</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation?.navigate('Batimento')} style={styles.navItem}>
-          <Ionicons name="watch-outline" size={22} color="#fff" />
-          <Text style={styles.navLabel}>Relógio</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNavBar activeTab="treino" />
     </SafeAreaView>
   );
 }
@@ -264,14 +238,4 @@ const styles = StyleSheet.create({
   linhaTreinos: { color: '#9A9A9A', fontSize: 11, marginTop: 2 },
   linhaDiasRow: { flexDirection: 'row', alignItems: 'center' },
   linhaDias: { color: '#fff', fontSize: 14, fontWeight: '700', marginLeft: 4 },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: '#2A2A2A',
-    paddingVertical: 12,
-    backgroundColor: '#121212',
-  },
-  navItem: { alignItems: 'center' },
-  navLabel: { color: '#fff', fontSize: 11, marginTop: 4 },
 });

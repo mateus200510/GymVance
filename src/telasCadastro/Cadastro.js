@@ -62,10 +62,11 @@ export default function Cadastro({ navigation }) {
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* LOGO */}
         <Image
-          source={require('../../assets/FundoPretoRestoBranco.jpeg')}
+          source={require('../../assets/FundoPretoRestoBranco-removebg-preview.png')}
           style={styles.logo}
           resizeMode="contain"
         />

@@ -47,7 +47,10 @@ export default function Entrar({ navigation }) {
     // Por enquanto não existe API ou banco.
     // Depois podemos colocar o login real aqui.
 
-    navigation.replace('TreinoHub');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'TreinoHub' }],
+    });
   };
 
   return (
@@ -55,11 +58,12 @@ export default function Entrar({ navigation }) {
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
 
         {/* LOGO */}
         <Image
-          source={require('../../assets/FundoPretoRestoBranco.jpeg')}
+          source={require('../../assets/FundoPretoRestoBranco-removebg-preview.png')}
           style={styles.logo}
           resizeMode="contain"
         />

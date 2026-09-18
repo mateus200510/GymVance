@@ -1,31 +1,57 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
   StatusBar,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import BottomNavBar from '../components/BottomNavBar';
+import { useNomeUsuario } from '../services/useUserProfile';
+import { BPM_PADRAO, KCAL_META_PADRAO, getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
 
 // Tela de "Calorias" do Gymvance
 // Mesma identidade visual da tela de Batimento, mas com a queima diária em destaque
 // e o BPM como informação secundária
 export default function Calorias({ navigation }) {
-  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const nomeUsuario = 'Lucas Miyashiro';
-  const kcalQueimadas = 1365;
-  const kcalMeta = 2500;
+  const nomeUsuario = useNomeUsuario();
+  const [kcalQueimadas, setKcalQueimadas] = useState(0);
+  const [kcalMeta, setKcalMeta] = useState(KCAL_META_PADRAO);
   const percentualMeta = Math.round((kcalQueimadas / kcalMeta) * 100);
-  const bpmAtual = 70;
+  const [bpmAtual, setBpmAtual] = useState(BPM_PADRAO);
   const circleSize = Math.min(Math.max(width * 0.68, 200), 260);
 
+  useEffect(() => {
+    let ativo = true;
+
+    (async () => {
+      const [kcal, meta, bpm] = await Promise.all([
+        getKcalQueimadas(),
+        getKcalMeta(),
+        getBpmAtual(),
+      ]);
+
+      if (!ativo) {
+        return;
+      }
+
+      setKcalQueimadas(kcal);
+      setKcalMeta(meta);
+      setBpmAtual(bpm);
+    })();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 8 }]}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
       {/* Cabeçalho */}
@@ -83,32 +109,7 @@ export default function Calorias({ navigation }) {
       </View>
       </ScrollView>
 
-      {/* Navegação inferior */}
-      <View style={[styles.navInferior, { paddingBottom: insets.bottom + 10 }]}>
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => navigation?.navigate('TreinoHub')}
-        >
-          <Image source={require('../../assets/anilha.png')} style={styles.navIcone} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => navigation?.navigate('Alimentacao')}
-        >
-          <Image source={require('../../assets/alimentacao.png')} style={styles.navIcone} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItemAtivo}
-          activeOpacity={0.7}
-          onPress={() => navigation?.navigate('Batimento')}
-        >
-          <Image source={require('../../assets/relogio.png')} style={styles.navIcone} />
-        </TouchableOpacity>
-      </View>
+      <BottomNavBar activeTab="relogio" />
     </SafeAreaView>
   );
 }
@@ -268,36 +269,5 @@ const styles = StyleSheet.create({
     color: '#888888',
     fontSize: 14,
     marginBottom: 5,
-  },
-  navInferior: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    marginTop: 'auto',
-    backgroundColor: CINZA_ESCURO,
-    borderRadius: 40,
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 10,
-    marginBottom: 6,
-  },
-  navItem: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navItemAtivo: {
-    width: 56,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: VERDE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navIcone: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
   },
 });

@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+
+import BottomNavBar from '../components/BottomNavBar';
+import { useNomeUsuario } from '../services/useUserProfile';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', inputBg: '#2A2A2A' };
 
 export default function NovaSessao({ navigation }) {
   const [titulo, setTitulo] = useState('');
-  const insets = useSafeAreaInsets();
+  const nomeUsuario = useNomeUsuario();
 
 return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -16,7 +19,7 @@ return (
           <Text style={styles.tituloSecundario}>Evolução diária</Text>
           <View style={styles.userRow}>
             <View style={styles.avatar} />
-            <Text style={styles.userNome}>Lucas Miyashiro</Text>
+            <Text style={styles.userNome} numberOfLines={1} ellipsizeMode="tail">{nomeUsuario}</Text>
           </View>
         </View>
         <View style={styles.headerActions}>
@@ -70,30 +73,8 @@ return (
         </TouchableOpacity>
       </View>
 
-      <BottomNav navigation={navigation} active="Treino" insets={insets} />
+      <BottomNavBar activeTab="treino" />
     </SafeAreaView>
-  );
-}
-
-function BottomNav({ active, navigation, insets }) {
-  const itens = [
-    { nome: 'Treino', icon: 'barbell-outline', screen: 'TreinoHub' },
-    { nome: 'Alimentação', icon: 'heart-outline', screen: 'Alimentacao' },
-    { nome: 'Relógio', icon: 'watch-outline', screen: 'Batimento' },
-  ];
-  return (
-    <View style={[styles.bottomNav, { paddingBottom: (insets?.bottom ?? 0) + 10 }]}>
-      {itens.map((it) => (
-        <TouchableOpacity
-          key={it.nome}
-          style={styles.navItem}
-          onPress={() => navigation?.navigate(it.screen)}
-        >
-          <Ionicons name={it.icon} size={20} color={it.nome === active ? COLORS.green : COLORS.muted} />
-          <Text style={[styles.navLabel, it.nome === active && { color: COLORS.green }]}>{it.nome}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
   );
 }
 
@@ -119,7 +100,4 @@ const styles = StyleSheet.create({
   btnExercicioText: { color: COLORS.green, fontWeight: '700' },
   btnDescartarSolido: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.card, paddingVertical: 12, borderRadius: 12 },
   btnDescartarSolidoText: { color: COLORS.muted, fontWeight: '600' },
-  bottomNav: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#242424', paddingTop: 10 },
-  navItem: { alignItems: 'center', gap: 2 },
-  navLabel: { color: COLORS.muted, fontSize: 11 },
 });

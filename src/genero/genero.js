@@ -6,87 +6,103 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getUserProfile, saveUserProfile } from '../services/storage';
-
-const MESES = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-];
+import { getUserProfile, saveUserProfile, formatarDataNascimento, normalizarDataNascimento } from '../services/storage';
 
 const GENEROS = ['Homem', 'Mulher'];
 
+function formatarDataInput(texto) {
+  const apenasNumeros = texto.replace(/\D/g, '').slice(0, 8);
+  if (apenasNumeros.length <= 2) {
+    return apenasNumeros;
+  }
+  if (apenasNumeros.length <= 4) {
+    return `${apenasNumeros.slice(0, 2)}/${apenasNumeros.slice(2)}`;
+  }
+  return `${apenasNumeros.slice(0, 2)}/${apenasNumeros.slice(2, 4)}/${apenasNumeros.slice(4, 8)}`;
+}
+
+function validarDataNascimento(value) {
+  const iso = normalizarDataNascimento(value);
+  if (!iso) {
+    return null;
+  }
+
+  const [ano, mes, dia] = iso.split('-').map(Number);
+  const data = new Date(ano, mes - 1, dia);
+
+  if (
+    data.getFullYear() !== ano ||
+    data.getMonth() !== mes - 1 ||
+    data.getDate() !== dia
+  ) {
+    return null;
+  }
+
+  return iso;
+}
+
 export default function Genero({ navigation }) {
-  const [nome, setNome] = useState('Lucas Eiji');
-  const [mesSelecionado, setMesSelecionado] = useState('Abril');
-  const [generoSelecionado, setGeneroSelecionado] = useState('Homem');
-  const [dia, setDia] = useState('08');
-  const [ano, setAno] = useState('1998');
+  const [nome, setNome] = useState('');
+  const [generoSelecionado, setGeneroSelecionado] = useState('');
+  const [dataNascimento, setDataNascimento] = useState('');
 
   useEffect(() => {
     const carregarPerfil = async () => {
       const perfil = await getUserProfile();
       if (perfil?.nome) setNome(perfil.nome);
       if (perfil?.genero) setGeneroSelecionado(perfil.genero);
-      if (perfil?.mesNascimento) setMesSelecionado(perfil.mesNascimento);
-      if (perfil?.diaNascimento) setDia(perfil.diaNascimento);
-      if (perfil?.anoNascimento) setAno(perfil.anoNascimento);
+      if (perfil?.dataNascimento) {
+        setDataNascimento(formatarDataNascimento(perfil.dataNascimento));
+      }
     };
 
     carregarPerfil();
   }, []);
 
   const handleAvancar = async () => {
+    if (!nome.trim()) {
+      Alert.alert('Nome obrigatório', 'Informe seu nome para continuar.');
+      return;
+    }
+
+    const dataIso = validarDataNascimento(dataNascimento);
+    if (!dataIso) {
+      Alert.alert('Data inválida', 'Informe uma data de nascimento válida no formato DD/MM/AAAA.');
+      return;
+    }
+
+    if (!generoSelecionado) {
+      Alert.alert('Gênero obrigatório', 'Selecione seu gênero para continuar.');
+      return;
+    }
+
     await saveUserProfile({
-      nome,
+      nome: nome.trim(),
       genero: generoSelecionado,
-      mesNascimento: mesSelecionado,
-      diaNascimento: dia,
-      anoNascimento: ano,
+      dataNascimento: dataIso,
     });
-    navigation?.replace('TreinoHub');
+
+    navigation?.reset({
+      index: 0,
+      routes: [{ name: 'TreinoHub' }],
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <TouchableOpacity style={styles.backButton} onPress={() => navigation?.goBack()}>
           <Ionicons name="arrow-back" size={22} color="#3DDC5C" />
         </TouchableOpacity>
 
         <View style={styles.formCard}>
-          <View style={styles.selectBox}>
-            <Text style={styles.label}>Mês</Text>
-            <Text style={styles.value}>{mesSelecionado}</Text>
-          </View>
-
-          <View style={styles.gridMeses}>
-            {MESES.map((mes) => (
-              <TouchableOpacity
-                key={mes}
-                style={[styles.mesItem, mesSelecionado === mes && styles.mesItemAtivo]}
-                onPress={() => setMesSelecionado(mes)}
-              >
-                <Text style={[styles.mesTexto, mesSelecionado === mes && styles.mesTextoAtivo]}>{mes}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.stepText}>Etapa 2 de 4</Text>
-          <Text style={styles.title}>Crie um nome</Text>
+          <Text style={styles.stepText}>Etapa 4 de 4</Text>
+          <Text style={styles.title}>Crie seu perfil</Text>
 
           <Text style={styles.label}>Nome</Text>
           <TextInput
@@ -120,35 +136,17 @@ export default function Genero({ navigation }) {
           </View>
 
           <Text style={styles.sectionLabel}>Data de nascimento</Text>
-          <Text style={styles.helper}>Usamos sua data para adaptar o volume de treino, gasto calórico e dieta.</Text>
+          <Text style={styles.helper}>Informe a data completa do seu nascimento para personalizar sua evolução.</Text>
 
-          <View style={styles.dataRow}>
-            <TextInput
-              style={styles.dataInput}
-              value={dia}
-              onChangeText={(text) => setDia(text.replace(/\D/g, '').slice(0, 2))}
-              keyboardType="number-pad"
-              maxLength={2}
-              placeholder="dd"
-              placeholderTextColor="#7A7A7A"
-            />
-            <TextInput
-              style={styles.dataInput}
-              value={mesSelecionado}
-              editable={false}
-              placeholder="Mês"
-              placeholderTextColor="#7A7A7A"
-            />
-            <TextInput
-              style={styles.dataInput}
-              value={ano}
-              onChangeText={(text) => setAno(text.replace(/\D/g, '').slice(0, 4))}
-              keyboardType="number-pad"
-              maxLength={4}
-              placeholder="ano"
-              placeholderTextColor="#7A7A7A"
-            />
-          </View>
+          <TextInput
+            style={styles.input}
+            value={dataNascimento}
+            onChangeText={(text) => setDataNascimento(formatarDataInput(text))}
+            keyboardType="number-pad"
+            maxLength={10}
+            placeholder="DD/MM/AAAA"
+            placeholderTextColor="#7A7A7A"
+          />
 
           <TouchableOpacity style={styles.button} onPress={handleAvancar}>
             <Text style={styles.buttonText}>Avançar</Text>

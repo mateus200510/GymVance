@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -11,18 +10,21 @@ import {
   Linking,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+
+import BottomNavBar from '../components/BottomNavBar';
+import { useNomeUsuario } from '../services/useUserProfile';
+import { BPM_PADRAO, KCAL_META_PADRAO, getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
 
 // Tela de "Batimento Cardíaco" do Gymvance
 // Mostra o BPM em destaque no círculo central e a queima diária logo abaixo
 export default function Batimento({ navigation }) {
-  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const nomeUsuario = 'Lucas Miyashiro';
-  const bpmAtual = 70;
-  const kcalQueimadas = 1365;
-  const kcalMeta = 2500;
+  const nomeUsuario = useNomeUsuario();
+  const [bpmAtual, setBpmAtual] = useState(BPM_PADRAO);
+  const [kcalQueimadas, setKcalQueimadas] = useState(0);
+  const [kcalMeta, setKcalMeta] = useState(KCAL_META_PADRAO);
   const percentualMeta = Math.round((kcalQueimadas / kcalMeta) * 100);
   const circleSize = Math.min(Math.max(width * 0.68, 200), 260);
   const [location, setLocation] = useState(null);
@@ -67,6 +69,30 @@ export default function Batimento({ navigation }) {
     atualizarLocalizacao();
   }, []);
 
+  useEffect(() => {
+    let ativo = true;
+
+    (async () => {
+      const [bpm, kcal, meta] = await Promise.all([
+        getBpmAtual(),
+        getKcalQueimadas(),
+        getKcalMeta(),
+      ]);
+
+      if (!ativo) {
+        return;
+      }
+
+      setBpmAtual(bpm);
+      setKcalQueimadas(kcal);
+      setKcalMeta(meta);
+    })();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   const statusPrecisao =
     precision === null
       ? 'Aguardando...' 
@@ -77,7 +103,7 @@ export default function Batimento({ navigation }) {
           : '🔴 Baixa precisão';
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 8 }]}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
       {/* Cabeçalho */}
@@ -153,32 +179,7 @@ export default function Batimento({ navigation }) {
       </View>
       </ScrollView>
 
-      {/* Navegação inferior */}
-      <View style={[styles.navInferior, { paddingBottom: insets.bottom + 10 }]}>
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => navigation?.navigate('TreinoHub')}
-        >
-          <Image source={require('../../assets/anilha.png')} style={styles.navIcone} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          activeOpacity={0.7}
-          onPress={() => navigation?.navigate('Alimentacao')}
-        >
-          <Image source={require('../../assets/alimentacao.png')} style={styles.navIcone} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItemAtivo}
-          activeOpacity={0.7}
-          onPress={() => navigation?.navigate('Batimento')}
-        >
-          <Image source={require('../../assets/relogio.png')} style={styles.navIcone} />
-        </TouchableOpacity>
-      </View>
+      <BottomNavBar activeTab="relogio" />
     </SafeAreaView>
   );
 }
@@ -365,36 +366,5 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: VERDE,
     borderRadius: 3,
-  },
-  navInferior: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    marginTop: 'auto',
-    backgroundColor: CINZA_ESCURO,
-    borderRadius: 40,
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 10,
-    marginBottom: 6,
-  },
-  navItem: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navItemAtivo: {
-    width: 56,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: VERDE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navIcone: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
   },
 });
