@@ -67,21 +67,20 @@ export function getNomeUsuarioPadrao(perfil = {}) {
 }
 
 async function ensureFileSystemUri(uri) {
-  if (!uri) {
+  if (!uri || !FileSystem.documentDirectory) {
     return uri;
   }
 
-  if (uri.startsWith('file://')) {
-    const info = await FileSystem.getInfoAsync(uri);
-    if (info.exists) {
-      return uri;
-    }
+  if (uri.startsWith(FileSystem.documentDirectory)) {
+    return uri;
   }
 
+  const diretorio = `${FileSystem.documentDirectory}progresso/`;
   const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-  const destinationUri = `${FileSystem.documentDirectory}${fileName}`;
 
   try {
+    await FileSystem.makeDirectoryAsync(diretorio, { intermediates: true });
+    const destinationUri = `${diretorio}${fileName}`;
     await FileSystem.copyAsync({
       from: uri,
       to: destinationUri,
@@ -111,7 +110,7 @@ export async function saveWorkoutHistory(workout) {
     return next;
   } catch (error) {
     console.warn('Erro ao salvar histórico:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -120,6 +119,7 @@ export async function saveSelectedPlan(planName) {
     await AsyncStorage.setItem(PLAN_KEY, planName);
   } catch (error) {
     console.warn('Erro ao salvar plano:', error);
+    throw error;
   }
 }
 
@@ -156,7 +156,7 @@ export async function saveUserProfile(profile) {
     return next;
   } catch (error) {
     console.warn('Erro ao salvar perfil do usuário:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -206,7 +206,7 @@ export async function saveProgressPhoto(uri, metadata = {}) {
     return next;
   } catch (error) {
     console.warn('Erro ao salvar foto de progresso:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -223,7 +223,7 @@ export async function addProgressPhoto(photo) {
     return next;
   } catch (error) {
     console.warn('Erro ao salvar foto de progresso:', error);
-    return [];
+    throw error;
   }
 }
 

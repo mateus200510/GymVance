@@ -230,8 +230,13 @@ function TelaEditarPerfil({ onSalvar }) {
         <TouchableOpacity
           style={[styles.botaoVerde, { alignSelf: 'stretch', justifyContent: 'center' }]}
           onPress={async () => {
-            const atualizado = await saveUserProfile({ nome, email });
-            onSalvar(atualizado);
+            try {
+              const atualizado = await saveUserProfile({ nome, email });
+              onSalvar(atualizado);
+            } catch (error) {
+              console.warn('Erro ao salvar perfil:', error);
+              Alert.alert('Erro', 'Não foi possível salvar suas alterações.');
+            }
           }}
         >
           <Text style={styles.botaoVerdeTexto}>Salvar Evolução</Text>

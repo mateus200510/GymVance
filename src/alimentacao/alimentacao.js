@@ -274,17 +274,24 @@ export default function Alimentacao({ navigation }) {
       return;
     }
 
-    const salvas = await saveProgressPhoto(result.assets[0].uri, { origem: 'galeria' });
+    let salvas;
+
+    try {
+      salvas = await saveProgressPhoto(result.assets[0].uri, { origem: 'galeria' });
+    } catch (error) {
+      console.warn('Erro ao salvar foto:', error);
+      Alert.alert('Erro', 'Não foi possível salvar a foto.');
+      return;
+    }
+
     setFotosGaleria(salvas);
     setFotoCapturada(salvas[0]?.uri ?? result.assets[0].uri);
     setTela('galeria');
   };
 
   const abrirCamera = async () => {
-    let permissao = cameraPermission;
-
-    if (!permissao) {
-      permissao = await requestPermission();
+    if (!cameraPermission?.granted) {
+      const permissao = await requestPermission();
 
       if (!permissao.granted) {
         if (permissao.canAskAgain === false) {
@@ -297,9 +304,7 @@ export default function Alimentacao({ navigation }) {
       }
     }
 
-    if (permissao?.granted) {
-      setTela('camera');
-    }
+    setTela('camera');
   };
 
   const tirarFoto = async () => {

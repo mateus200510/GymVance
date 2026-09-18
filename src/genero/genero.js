@@ -81,11 +81,17 @@ export default function Genero({ navigation }) {
       return;
     }
 
-    await saveUserProfile({
-      nome: nome.trim(),
-      genero: generoSelecionado,
-      dataNascimento: dataIso,
-    });
+    try {
+      await saveUserProfile({
+        nome: nome.trim(),
+        genero: generoSelecionado,
+        dataNascimento: dataIso,
+      });
+    } catch (error) {
+      console.warn('Erro ao salvar perfil:', error);
+      Alert.alert('Erro', 'Não foi possível salvar seus dados. Tente novamente.');
+      return;
+    }
 
     navigation?.reset({
       index: 0,

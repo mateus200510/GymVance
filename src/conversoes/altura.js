@@ -93,7 +93,14 @@ export default function AlturaScreen({ navigation }) {
             return;
           }
 
-          await saveUserProfile({ altura: valor, alturaUnidade: unidade });
+          try {
+            await saveUserProfile({ altura: valor, alturaUnidade: unidade });
+          } catch (error) {
+            console.warn('Erro ao salvar altura:', error);
+            Alert.alert('Erro', 'Não foi possível salvar seus dados. Tente novamente.');
+            return;
+          }
+
           navigation.navigate('Genero');
         }}
       >

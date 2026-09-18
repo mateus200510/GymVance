@@ -24,7 +24,7 @@ export default function SessaoAtiva({ navigation }) {
     { id: 1, kg: '80', reps: '8', concluido: true, falhou: false, nota: '2 séries reservas' },
     { id: 2, kg: '100', reps: '5', concluido: false, falhou: true, nota: '' },
   ]);
-  const [tempo] = useState('00:15:42');
+  const [tempo, setTempo] = useState('00:00:00');
   const [instabilidade, setInstabilidade] = useState('');
   const ultimaAceleracao = useRef({ x: 0, y: 0, z: 0 });
 
@@ -46,6 +46,20 @@ export default function SessaoAtiva({ navigation }) {
     };
   }, []);
 
+  useEffect(() => {
+    const inicio = Date.now();
+
+    const timer = setInterval(() => {
+      const segundos = Math.floor((Date.now() - inicio) / 1000);
+      const horas = String(Math.floor(segundos / 3600)).padStart(2, '0');
+      const minutos = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
+      const secs = String(segundos % 60).padStart(2, '0');
+      setTempo(`${horas}:${minutos}:${secs}`);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const toggleConcluido = (id) => {
     setSeries((prev) =>
       prev.map((s) => (s.id === id ? { ...s, concluido: !s.concluido, falhou: false } : s))
@@ -57,6 +71,12 @@ export default function SessaoAtiva({ navigation }) {
       ...prev,
       { id: prev.length + 1, kg: '', reps: '', concluido: false, falhou: false, nota: '' },
     ]);
+  };
+
+  const atualizarNota = (id, nota) => {
+    setSeries((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, nota } : s))
+    );
   };
 
   const handleConcluir = async () => {
@@ -164,7 +184,8 @@ return (
               <TextInput
                 placeholder="Adicionar notas..."
                 placeholderTextColor={COLORS.muted}
-                defaultValue={s.nota}
+                value={s.nota}
+                onChangeText={(text) => atualizarNota(s.id, text)}
                 style={styles.notaInput}
               />
             </View>

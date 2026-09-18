@@ -93,7 +93,14 @@ export default function PesoScreen({ navigation }) {
             return;
           }
 
-          await saveUserProfile({ peso: valor, pesoUnidade: unidade });
+          try {
+            await saveUserProfile({ peso: valor, pesoUnidade: unidade });
+          } catch (error) {
+            console.warn('Erro ao salvar peso:', error);
+            Alert.alert('Erro', 'Não foi possível salvar seus dados. Tente novamente.');
+            return;
+          }
+
           navigation.navigate('Altura');
         }}
       >
