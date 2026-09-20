@@ -8,15 +8,7 @@ import { useNomeUsuario } from '../services/useUserProfile';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', laranja: '#FF7A1A' };
 
-const SEMANA = [
-  { letra: 'Seg', numero: 18 },
-  { letra: 'Ter', numero: 19 },
-  { letra: 'Qua', numero: 20 },
-  { letra: 'Qui', numero: 21 },
-  { letra: 'Sex', numero: 22 },
-  { letra: 'Sab', numero: 23 },
-  { letra: 'Dom', numero: 24 },
-];
+const SEMANA = [];
 
 export default function TreinoHub({ navigation }) {
   const nomeUsuario = useNomeUsuario();
@@ -58,14 +50,16 @@ export default function TreinoHub({ navigation }) {
           </View>
         </View>
 
-        <View style={styles.semanaRow}>
-          {SEMANA.map((d) => (
-            <View key={d.numero} style={styles.diaColuna}>
-              <Text style={styles.diaLetra}>{d.letra}</Text>
-              <Text style={styles.diaNumero}>{d.numero}</Text>
-            </View>
-          ))}
-        </View>
+        {SEMANA.length > 0 && (
+          <View style={styles.semanaRow}>
+            {SEMANA.map((d) => (
+              <View key={d.numero} style={styles.diaColuna}>
+                <Text style={styles.diaLetra}>{d.letra}</Text>
+                <Text style={styles.diaNumero}>{d.numero}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         <Text style={styles.sessaoTitulo}>Sessão de Treino</Text>
 

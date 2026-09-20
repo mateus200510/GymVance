@@ -20,10 +20,7 @@ const COLORS = {
 };
 
 export default function SessaoAtiva({ navigation }) {
-  const [series, setSeries] = useState([
-    { id: 1, kg: '80', reps: '8', concluido: true, falhou: false, nota: '2 séries reservas' },
-    { id: 2, kg: '100', reps: '5', concluido: false, falhou: true, nota: '' },
-  ]);
+  const [series, setSeries] = useState([]);
   const [tempo, setTempo] = useState('00:00:00');
   const [instabilidade, setInstabilidade] = useState('');
   const ultimaAceleracao = useRef({ x: 0, y: 0, z: 0 });
@@ -152,7 +149,7 @@ return (
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.exercicioNome}>Supino Reto</Text>
+            <Text style={styles.exercicioNome} />
             <Ionicons name="ellipsis-vertical" size={18} color={COLORS.muted} />
           </View>
 

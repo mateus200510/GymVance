@@ -17,49 +17,27 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { getProgressPhotos, saveProgressPhoto } from '../services/storage';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useNomeUsuario } from '../services/useUserProfile';
 
-const DIAS_SEMANA = [
-  { label: 'Seg', data: 20 },
-  { label: 'Ter', data: 21 },
-  { label: 'Qua', data: 22 },
-  { label: 'Qui', data: 23 },
-  { label: 'Sex', data: 24 },
-  { label: 'Sab', data: 25 },
-  { label: 'Dom', data: 26 },
-];
+const DIAS_SEMANA = [];
 
-const REFEICOES = [
-  { id: '1', nome: 'Café da manhã', descricao: 'Ovos mexidos, torrada integral, café com leite', kcal: 320 },
-  { id: '2', nome: 'Almoço', descricao: 'Peito de frango, arroz integral, brócolis', kcal: 650 },
-  { id: '3', nome: 'Lanche da tarde', descricao: 'Iogurte grego desnatado, banana, aveia', kcal: 250 },
-  { id: '4', nome: 'Jantar', descricao: 'Filé de salmão, purê de batata doce', kcal: 630 },
-];
+const REFEICOES = [];
 
-const MACROS = [
-  { label: 'PROTEÍNAS', atual: 135, meta: 180, unidade: 'g' },
-  { label: 'CARBOIDRATOS', atual: 180, meta: 240, unidade: 'g' },
-  { label: 'GORDURAS', atual: 48, meta: 70, unidade: 'g' },
-];
+const MACROS = [];
 
-const KCAL_ATUAL = 1650;
-const KCAL_META = 2230;
-
-// Fotos das refeições agrupadas por data — vazias, sem imagens aleatórias.
-const FOTOS_REFEICOES = [
-  { data: 'Segunda-feira, 22 out.', fotos: [null, null, null, null] },
-  { data: 'Domingo, 21 de out.', fotos: [null] },
-];
+const KCAL_ATUAL = null;
+const KCAL_META = null;
 
 function BarraProgresso({ percentual, cor = '#3DDC5C' }) {
   return (
     <View style={styles.barraFundo}>
-      <View style={[styles.barraPreenchida, { width: `${percentual}%`, backgroundColor: cor }]} />
+      <View style={[styles.barraPreenchida, { width: `${percentual ?? 0}%`, backgroundColor: cor }]} />
     </View>
   );
 }
 
-function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada }) {
-  const percentualKcal = Math.min(100, Math.round((KCAL_ATUAL / KCAL_META) * 100));
+function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuario }) {
+  const percentualKcal = KCAL_META ? Math.min(100, Math.round((KCAL_ATUAL / KCAL_META) * 100)) : null;
   const [pergunta, setPergunta] = useState('');
 
   return (
@@ -73,7 +51,7 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada }) {
         <View style={styles.perfilIcone}>
           <Feather name="user" size={20} color="#8E8E93" />
         </View>
-        <Text style={styles.headerNome}>Nome</Text>
+        <Text style={styles.headerNome}>{nomeUsuario}</Text>
         <View style={styles.headerDireita}>
           <Text style={styles.logo}>Gymvance</Text>
           <TouchableOpacity onPress={onAbrirCamera} style={{ marginLeft: 12 }}>
@@ -92,46 +70,45 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada }) {
       ) : null}
 
       {/* Seletor de dias */}
-      <View style={styles.diasRow}>
-        {DIAS_SEMANA.map((dia) => {
-          const selecionado = dia.label === 'Qui';
-          return (
+      {DIAS_SEMANA.length > 0 && (
+        <View style={styles.diasRow}>
+          {DIAS_SEMANA.map((dia) => (
             <View key={dia.label} style={styles.diaItem}>
               <Text style={styles.diaLabel}>{dia.label}</Text>
-              <View style={[styles.diaCirculo, selecionado && styles.diaCirculoAtivo]}>
-                <Text style={[styles.diaNumero, selecionado && styles.diaNumeroAtivo]}>
-                  {dia.data}
-                </Text>
+              <View style={styles.diaCirculo}>
+                <Text style={styles.diaNumero}>{dia.data}</Text>
               </View>
             </View>
-          );
-        })}
-      </View>
+          ))}
+        </View>
+      )}
 
       {/* Consumo diário */}
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
           <Text style={styles.cardTitulo}>Consumo Diário</Text>
-          <Text style={styles.cardPercentual}>{percentualKcal}%</Text>
+          <Text style={styles.cardPercentual}>{percentualKcal === null ? '—' : `${percentualKcal}%`}</Text>
         </View>
         <Text style={styles.kcalTexto}>
-          {KCAL_ATUAL} <Text style={styles.kcalMeta}>/ {KCAL_META} kcal</Text>
+          {KCAL_ATUAL ?? '—'} <Text style={styles.kcalMeta}>/ {KCAL_META ?? '—'} kcal</Text>
         </Text>
         <BarraProgresso percentual={percentualKcal} />
 
-        <View style={styles.macrosRow}>
-          {MACROS.map((macro) => (
-            <View key={macro.label} style={styles.macroItem}>
-              <Text style={styles.macroLabel}>{macro.label}</Text>
-              <Text style={styles.macroValor}>
-                {macro.atual}
-                {macro.unidade}
-                <Text style={styles.macroMeta}> /{macro.meta}{macro.unidade}</Text>
-              </Text>
-              <BarraProgresso percentual={(macro.atual / macro.meta) * 100} />
-            </View>
-          ))}
-        </View>
+        {MACROS.length > 0 && (
+          <View style={styles.macrosRow}>
+            {MACROS.map((macro) => (
+              <View key={macro.label} style={styles.macroItem}>
+                <Text style={styles.macroLabel}>{macro.label}</Text>
+                <Text style={styles.macroValor}>
+                  {macro.atual}
+                  {macro.unidade}
+                  <Text style={styles.macroMeta}> /{macro.meta}{macro.unidade}</Text>
+                </Text>
+                <BarraProgresso percentual={(macro.atual / macro.meta) * 100} />
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Refeições de hoje */}
@@ -236,6 +213,7 @@ function TelaGaleria({ onVoltar, fotos = [] }) {
 }
 
 export default function Alimentacao({ navigation }) {
+  const nomeUsuario = useNomeUsuario();
   const [tela, setTela] = useState('dashboard');
   const [cameraPermission, requestPermission] = useCameraPermissions();
   const [fotoCapturada, setFotoCapturada] = useState(null);
@@ -332,6 +310,7 @@ export default function Alimentacao({ navigation }) {
           onAbrirGaleria={abrirGaleria}
           onAbrirCamera={abrirCamera}
           fotoCapturada={fotoCapturada}
+          nomeUsuario={nomeUsuario}
         />
       ) : tela === 'galeria' ? (
         <TelaGaleria fotos={fotosGaleria} onVoltar={() => setTela('dashboard')} />

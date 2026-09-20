@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
-import { BPM_PADRAO, KCAL_META_PADRAO, getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
+import { getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
 
 // Tela de "Calorias" do Gymvance
 // Mesma identidade visual da tela de Batimento, mas com a queima diária em destaque
@@ -20,10 +20,12 @@ import { BPM_PADRAO, KCAL_META_PADRAO, getBpmAtual, getKcalMeta, getKcalQueimada
 export default function Calorias({ navigation }) {
   const { width } = useWindowDimensions();
   const nomeUsuario = useNomeUsuario();
-  const [kcalQueimadas, setKcalQueimadas] = useState(0);
-  const [kcalMeta, setKcalMeta] = useState(KCAL_META_PADRAO);
-  const percentualMeta = Math.round((kcalQueimadas / kcalMeta) * 100);
-  const [bpmAtual, setBpmAtual] = useState(BPM_PADRAO);
+  const [kcalQueimadas, setKcalQueimadas] = useState(null);
+  const [kcalMeta, setKcalMeta] = useState(null);
+  const percentualMeta = kcalQueimadas !== null && kcalMeta
+    ? Math.round((kcalQueimadas / kcalMeta) * 100)
+    : null;
+  const [bpmAtual, setBpmAtual] = useState(null);
   const circleSize = Math.min(Math.max(width * 0.68, 200), 260);
 
   useEffect(() => {
@@ -80,15 +82,15 @@ export default function Calorias({ navigation }) {
             onPress={() => navigation?.navigate('Batimento')}
           >
             <View style={styles.badgePercentualCirculo}>
-              <Text style={styles.badgeTexto}>{percentualMeta}%</Text>
+              <Text style={styles.badgeTexto}>{percentualMeta === null ? '—' : `${percentualMeta}%`}</Text>
             </View>
-            <Text style={[styles.kcalNumero, { fontSize: Math.min(circleSize * 0.19, 50) }]}>{kcalQueimadas.toLocaleString('pt-BR')}</Text>
+            <Text style={[styles.kcalNumero, { fontSize: Math.min(circleSize * 0.19, 50) }]}>{kcalQueimadas === null ? '—' : kcalQueimadas.toLocaleString('pt-BR')}</Text>
             <View style={styles.kcalLinha}>
               <Text style={styles.chamaIcone}>🔥</Text>
               <Text style={styles.kcalLabel}>KCAL</Text>
             </View>
             <Text style={styles.kcalMetaTexto}>
-              de {kcalMeta.toLocaleString('pt-BR')} kcal
+              de {kcalMeta === null ? '—' : kcalMeta.toLocaleString('pt-BR')} kcal
             </Text>
           </TouchableOpacity>
         </View>
@@ -103,7 +105,7 @@ export default function Calorias({ navigation }) {
         </View>
         <View style={styles.bpmLinhaValor}>
           <Text style={styles.coracaoIconeGrande}>♡</Text>
-          <Text style={styles.bpmValor}>{bpmAtual}</Text>
+          <Text style={styles.bpmValor}>{bpmAtual === null ? '—' : bpmAtual}</Text>
           <Text style={styles.bpmUnidade}>BPM</Text>
         </View>
       </View>

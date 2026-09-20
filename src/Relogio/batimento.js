@@ -15,17 +15,19 @@ import * as Location from 'expo-location';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
-import { BPM_PADRAO, KCAL_META_PADRAO, getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
+import { getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
 
 // Tela de "Batimento Cardíaco" do Gymvance
 // Mostra o BPM em destaque no círculo central e a queima diária logo abaixo
 export default function Batimento({ navigation }) {
   const { width } = useWindowDimensions();
   const nomeUsuario = useNomeUsuario();
-  const [bpmAtual, setBpmAtual] = useState(BPM_PADRAO);
-  const [kcalQueimadas, setKcalQueimadas] = useState(0);
-  const [kcalMeta, setKcalMeta] = useState(KCAL_META_PADRAO);
-  const percentualMeta = Math.round((kcalQueimadas / kcalMeta) * 100);
+  const [bpmAtual, setBpmAtual] = useState(null);
+  const [kcalQueimadas, setKcalQueimadas] = useState(null);
+  const [kcalMeta, setKcalMeta] = useState(null);
+  const percentualMeta = kcalQueimadas !== null && kcalMeta
+    ? Math.round((kcalQueimadas / kcalMeta) * 100)
+    : null;
   const circleSize = Math.min(Math.max(width * 0.68, 200), 260);
   const [location, setLocation] = useState(null);
   const [precision, setPrecision] = useState(null);
@@ -131,7 +133,7 @@ export default function Batimento({ navigation }) {
             style={[styles.circulo, { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }]}
             onPress={() => navigation?.navigate('Calorias')}
           >
-            <Text style={[styles.bpmNumero, { fontSize: Math.min(circleSize * 0.28, 60) }]}>{bpmAtual}</Text>
+            <Text style={[styles.bpmNumero, { fontSize: Math.min(circleSize * 0.28, 60) }]}>{bpmAtual === null ? '—' : bpmAtual}</Text>
             <View style={styles.bpmLinha}>
               <Text style={styles.coracaoIcone}>♡</Text>
               <Text style={styles.bpmLabel}>BPM</Text>
@@ -144,15 +146,15 @@ export default function Batimento({ navigation }) {
         <View style={styles.queimaCabecalho}>
           <Text style={styles.queimaTitulo}>QUEIMA DIÁRIA</Text>
           <View style={styles.badgePercentual}>
-            <Text style={styles.badgeTexto}>{percentualMeta}%</Text>
+            <Text style={styles.badgeTexto}>{percentualMeta === null ? '—' : `${percentualMeta}%`}</Text>
           </View>
         </View>
         <Text style={styles.queimaValor}>
-          {kcalQueimadas.toLocaleString('pt-BR')}{' '}
-          <Text style={styles.queimaMeta}>/ {kcalMeta.toLocaleString('pt-BR')} kcal</Text>
+          {kcalQueimadas === null ? '—' : kcalQueimadas.toLocaleString('pt-BR')}{' '}
+          <Text style={styles.queimaMeta}>/ {kcalMeta === null ? '—' : kcalMeta.toLocaleString('pt-BR')} kcal</Text>
         </Text>
         <View style={styles.barraFundo}>
-          <View style={[styles.barraPreenchida, { width: `${percentualMeta}%` }]} />
+          <View style={[styles.barraPreenchida, { width: `${percentualMeta ?? 0}%` }]} />
         </View>
       </View>
 

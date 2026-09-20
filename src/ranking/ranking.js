@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -10,25 +10,14 @@ import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-ico
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import BottomNavBar from '../components/BottomNavBar';
-import { useNomeUsuario } from '../services/useUserProfile';
-import { getDadosRankingSimulado } from '../services/metricas';
 
-const PODIO = [
-  { posicao: 2, nome: 'Gabriel S.', dias: 18, cor: '#B0B0B0' },
-  { posicao: 1, nome: 'Renata A.', dias: 24, cor: '#F4C430' },
-  { posicao: 3, nome: 'Thiago M.', dias: 15, cor: '#CD7F32' },
-];
+const PODIO = [];
 
 const ABAS = ['Semanal', 'Mensal', 'Geral'];
 
 export default function Ranking({ navigation }) {
-  const nomeUsuario = useNomeUsuario();
   const [abaAtiva, setAbaAtiva] = useState('Semanal');
-  const [dadosRanking, setDadosRanking] = useState([]);
-
-  React.useEffect(() => {
-    setDadosRanking(getDadosRankingSimulado(nomeUsuario));
-  }, [nomeUsuario]);
+  const [dadosRanking] = useState([]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -39,7 +28,7 @@ export default function Ranking({ navigation }) {
         <View style={styles.header}>
           <View style={styles.streak}>
             <MaterialCommunityIcons name="fire" size={22} color="#3DDC5C" />
-            <Text style={styles.streakText}>5</Text>
+            <Text style={styles.streakText}>—</Text>
           </View>
           <Text style={styles.logo}>
             Gym<Text style={styles.logoAccent}>vance</Text>
@@ -49,6 +38,7 @@ export default function Ranking({ navigation }) {
         <Text style={styles.titulo}>Ranking Geral</Text>
         <Text style={styles.subtitulo}>Supere seus limites e conquiste o topo!</Text>
 
+        {PODIO.length > 0 && (
         <View style={styles.podioRow}>
           {PODIO.map((item) => (
             <View
@@ -82,6 +72,7 @@ export default function Ranking({ navigation }) {
             </View>
           ))}
         </View>
+        )}
 
         <View style={styles.abasRow}>
           {ABAS.map((aba) => (
