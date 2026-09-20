@@ -45,7 +45,10 @@ return (
           <Ionicons name="chevron-back" size={22} color={COLORS.green} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.btnUsarSessao}>
+        <TouchableOpacity
+          style={styles.btnUsarSessao}
+          onPress={() => navigation?.navigate('SessaoAtiva')}
+        >
           <Ionicons name="add" size={18} color="#000" />
           <Text style={styles.btnUsarSessaoText}>Usar sessão criada</Text>
         </TouchableOpacity>

@@ -79,6 +79,12 @@ export default function SessaoAtiva({ navigation }) {
     );
   };
 
+  const atualizarSerie = (id, campo, valor) => {
+    setSeries((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, [campo]: valor } : s))
+    );
+  };
+
   const handleConcluir = async () => {
     const magnitude = Math.sqrt(
       ultimaAceleracao.current.x ** 2 +
@@ -164,8 +170,22 @@ return (
                 <View style={[styles.serieBadge, { flex: 0.6 }]}>
                   <Text style={styles.serieBadgeText}>{idx + 1}</Text>
                 </View>
-                <Text style={[styles.valorTexto, { flex: 1 }]}>{s.kg}</Text>
-                <Text style={[styles.valorTexto, { flex: 1 }]}>{s.reps}</Text>
+                <TextInput
+                  style={[styles.valorInput, { flex: 1 }]}
+                  value={s.kg}
+                  onChangeText={(text) => atualizarSerie(s.id, 'kg', text)}
+                  keyboardType="numeric"
+                  placeholder=""
+                  placeholderTextColor={COLORS.muted}
+                />
+                <TextInput
+                  style={[styles.valorInput, { flex: 1 }]}
+                  value={s.reps}
+                  onChangeText={(text) => atualizarSerie(s.id, 'reps', text)}
+                  keyboardType="number-pad"
+                  placeholder=""
+                  placeholderTextColor={COLORS.muted}
+                />
                 <View style={{ flex: 1 }} />
                 <View style={styles.acoesLinha}>
                   <TouchableOpacity
@@ -243,6 +263,7 @@ const styles = StyleSheet.create({
   serieBadge: { backgroundColor: COLORS.inputBg, borderRadius: 6, width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
   serieBadgeText: { color: COLORS.text, fontWeight: '700', fontSize: 12 },
   valorTexto: { color: COLORS.text, fontSize: 14 },
+  valorInput: { backgroundColor: COLORS.inputBg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 4, marginHorizontal: 2, color: COLORS.text, fontSize: 14, textAlign: 'center' },
   acoesLinha: { flexDirection: 'row', gap: 6 },
   circulo: { width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.inputBg, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
   circuloGreen: { backgroundColor: COLORS.green },
