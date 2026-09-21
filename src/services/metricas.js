@@ -1,6 +1,6 @@
 // Camada de preparação para API/banco.
-// As funções abaixo retornam null (ausência de dados) até o backend da Gymvance existir.
-// Quando o backend da Gymvance existir, substitua apenas estas implementações.
+// As funções abaixo retornam null (ausência de dados) até o backend da GymVance existir.
+// Quando o backend da GymVance existir, substitua apenas estas implementações.
 import { getUserProfile } from './storage';
 
 // TODO(api): substituir pela chamada real quando o backend existir.

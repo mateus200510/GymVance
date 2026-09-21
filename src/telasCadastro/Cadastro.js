@@ -75,7 +75,7 @@ export default function Cadastro({ navigation }) {
         <Text style={styles.title}>Crie sua conta</Text>
 
         <Text style={styles.subtitle}>
-          Comece sua jornada com o Gymvance
+          Comece sua jornada com o GymVance
         </Text>
 
         {/* E-MAIL */}

@@ -14,7 +14,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
 import { getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
 
-// Tela de "Calorias" do Gymvance
+// Tela de "Calorias" do GymVance
 // Mesma identidade visual da tela de Batimento, mas com a queima diária em destaque
 // e o BPM como informação secundária
 export default function Calorias({ navigation }) {

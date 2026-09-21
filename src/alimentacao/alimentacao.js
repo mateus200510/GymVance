@@ -53,7 +53,7 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuar
         </View>
         <Text style={styles.headerNome}>{nomeUsuario}</Text>
         <View style={styles.headerDireita}>
-          <Text style={styles.logo}>Gymvance</Text>
+          <Text style={styles.logo}>GymVance</Text>
           <TouchableOpacity onPress={onAbrirCamera} style={{ marginLeft: 12 }}>
             <Feather name="camera" size={20} color="#8E8E93" />
           </TouchableOpacity>
@@ -137,7 +137,7 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuar
             <Feather name="cpu" size={16} color="#000" />
           </View>
           <Text style={styles.assistenteTexto}>
-            Oi! Sou o assistente do Gymvance. Como posso te ajudar com sua alimentação hoje?
+            Oi! Sou o assistente do GymVance. Como posso te ajudar com sua alimentação hoje?
           </Text>
         </View>
         <View style={styles.assistenteInputRow}>

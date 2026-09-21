@@ -39,7 +39,7 @@ export default function Mensal({ navigation }) {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Ionicons name="barbell-outline" size={40} color="#111" />
-          <Text style={styles.logoTexto}>GYMVANCE</Text>
+          <Text style={styles.logoTexto}>GymVance</Text>
           <View style={styles.proBadge}>
             <Text style={styles.proTexto}>PRO</Text>
           </View>
@@ -94,7 +94,7 @@ export default function Mensal({ navigation }) {
           <BeneficioItem
             icone="heart-outline"
             titulo="Apoie nossa equipe"
-            descricao="Ajude o Gymvance a continuar evoluindo"
+            descricao="Ajude o GymVance a continuar evoluindo"
           />
         </View>
 

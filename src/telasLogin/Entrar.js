@@ -74,7 +74,7 @@ export default function Entrar({ navigation }) {
         </Text>
 
         <Text style={styles.subtitle}>
-          Entre na sua conta do Gymvance
+          Entre na sua conta do GymVance
         </Text>
 
         {/* E-MAIL */}

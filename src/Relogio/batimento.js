@@ -17,7 +17,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
 import { getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
 
-// Tela de "Batimento Cardíaco" do Gymvance
+// Tela de "Batimento Cardíaco" do GymVance
 // Mostra o BPM em destaque no círculo central e a queima diária logo abaixo
 export default function Batimento({ navigation }) {
   const { width } = useWindowDimensions();

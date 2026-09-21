@@ -92,7 +92,7 @@ function TelaEvolucao({ nomeUsuario, fotos, adicionando, onEditar, onAdicionarFo
           <Text style={styles.headerNome}>{nomeUsuario}</Text>
         </View>
         <View style={styles.headerDireita}>
-          <Text style={styles.logo}>Gymvance</Text>
+          <Text style={styles.logo}>GymVance</Text>
           <TouchableOpacity onPress={onVoltar} style={{ marginLeft: 12 }} accessibilityLabel="Voltar">
             <Feather name="arrow-left" size={20} color="#fff" />
           </TouchableOpacity>
@@ -182,7 +182,7 @@ function TelaEditarPerfil({ onSalvar }) {
         <TouchableOpacity onPress={onSalvar}>
           <Feather name="arrow-left" size={20} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.logo}>Gymvance</Text>
+        <Text style={styles.logo}>GymVance</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ alignItems: 'center', paddingTop: 20 }}>
