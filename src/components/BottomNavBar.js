@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useIdioma } from '../services/idioma';
 
 const COR_ATIVO = '#3DDC5C';
 const COR_INATIVO = '#8A8A8A';
@@ -10,14 +11,15 @@ const COR_FUNDO = '#121212';
 const COR_BORDA = '#242424';
 
 const ABAS = [
-  { id: 'treino', label: 'Treino', icon: 'dumbbell', tela: 'TreinoHub' },
-  { id: 'alimentacao', label: 'Alimentação', icon: 'heart-outline', tela: 'Alimentacao' },
-  { id: 'relogio', label: 'Relógio', icon: 'clock-outline', tela: 'Batimento' },
+  { id: 'treino', label: 'nav.treino', icon: 'dumbbell', tela: 'TreinoHub' },
+  { id: 'alimentacao', label: 'nav.alimentacao', icon: 'heart-outline', tela: 'Alimentacao' },
+  { id: 'relogio', label: 'nav.relogio', icon: 'clock-outline', tela: 'Batimento' },
 ];
 
 export default function BottomNavBar({ activeTab }) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useIdioma();
 
   return (
     <View style={[styles.barra, { paddingBottom: (insets?.bottom ?? 0) + 10 }]}>
@@ -33,7 +35,7 @@ export default function BottomNavBar({ activeTab }) {
             onPress={() => navigation?.navigate(aba.tela)}
           >
             <MaterialCommunityIcons name={aba.icon} size={22} color={cor} />
-            <Text style={[styles.label, { color: cor }]}>{aba.label}</Text>
+            <Text style={[styles.label, { color: cor }]}>{t(aba.label)}</Text>
           </TouchableOpacity>
         );
       })}

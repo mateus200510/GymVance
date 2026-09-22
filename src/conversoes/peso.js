@@ -6,15 +6,19 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getUserProfile, saveUserProfile } from '../services/storage';
+import { useIdioma } from '../services/idioma';
 
 const KG_PARA_LBS = 2.20462;
 
 export default function PesoScreen({ navigation }) {
+  const { t } = useIdioma();
   const [peso, setPeso] = useState('');
   const [unidade, setUnidade] = useState('kg'); // 'kg' | 'lbs'
 
@@ -48,6 +52,10 @@ export default function PesoScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
@@ -61,16 +69,16 @@ export default function PesoScreen({ navigation }) {
 
       <View style={styles.progressBar} />
 
-      <Text style={styles.step}>Etapa 2 de 4</Text>
-      <Text style={styles.title}>Qual seu peso?</Text>
+      <Text style={styles.step}>{t('peso.etapa')}</Text>
+      <Text style={styles.title}>{t('peso.titulo')}</Text>
 
-      <Text style={styles.label}>Peso</Text>
+      <Text style={styles.label}>{t('perfil.medida.peso')}</Text>
       <View style={styles.row}>
         <TextInput
           style={styles.input}
           placeholder="75"
           placeholderTextColor="#555"
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           value={peso}
           onChangeText={setPeso}
         />
@@ -89,7 +97,7 @@ export default function PesoScreen({ navigation }) {
           const valor = Number.parseFloat(String(peso).replace(',', '.'));
 
           if (!peso || Number.isNaN(valor) || valor <= 0) {
-            Alert.alert('Peso obrigatório', 'Informe um peso válido para continuar.');
+            Alert.alert(t('peso.obrigatorio'), t('peso.erroValor'));
             return;
           }
 
@@ -97,15 +105,16 @@ export default function PesoScreen({ navigation }) {
             await saveUserProfile({ peso: valor, pesoUnidade: unidade });
           } catch (error) {
             console.warn('Erro ao salvar peso:', error);
-            Alert.alert('Erro', 'Não foi possível salvar seus dados. Tente novamente.');
+            Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
             return;
           }
 
           navigation.navigate('Altura');
         }}
       >
-        <Text style={styles.advanceText}>Avançar</Text>
+        <Text style={styles.advanceText}>{t('comum.avancar')}</Text>
       </TouchableOpacity>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

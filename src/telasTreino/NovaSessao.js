@@ -5,10 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
+import { useIdioma } from '../services/idioma';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', inputBg: '#2A2A2A' };
 
 export default function NovaSessao({ navigation }) {
+  const { t } = useIdioma();
   const [titulo, setTitulo] = useState('');
   const nomeUsuario = useNomeUsuario();
 
@@ -16,7 +18,7 @@ return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.tituloSecundario}>Evolução diária</Text>
+          <Text style={styles.tituloSecundario}>{t('comum.evolucaoDiaria')}</Text>
           <View style={styles.userRow}>
             <View style={styles.avatar} />
             <Text style={styles.userNome} numberOfLines={1} ellipsizeMode="tail">{nomeUsuario}</Text>
@@ -26,10 +28,10 @@ return (
           <TouchableOpacity
             style={styles.rankingButton}
             onPress={() => navigation?.navigate('Ranking')}
-            accessibilityLabel="Abrir ranking"
+            accessibilityLabel={t('comum.abrirRanking')}
           >
             <Ionicons name="trophy-outline" size={16} color={COLORS.text} />
-            <Text style={styles.rankingText}>Ranking</Text>
+            <Text style={styles.rankingText}>{t('comum.ranking')}</Text>
           </TouchableOpacity>
           <Text style={styles.logo}>Gym<Text style={{ color: COLORS.green }}>vance</Text></Text>
         </View>
@@ -47,15 +49,15 @@ return (
 
         <TouchableOpacity
           style={styles.btnUsarSessao}
-          onPress={() => navigation?.navigate('SessaoAtiva')}
+          onPress={() => navigation?.navigate('SessaoAtiva', { titulo })}
         >
           <Ionicons name="add" size={18} color="#000" />
-          <Text style={styles.btnUsarSessaoText}>Usar sessão criada</Text>
+          <Text style={styles.btnUsarSessaoText}>{t('novaSessao.usarSessao')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.label}>Título da sessão</Text>
+        <Text style={styles.label}>{t('novaSessao.titulo')}</Text>
         <TextInput
-          placeholder="Adicionar título..."
+          placeholder={t('novaSessao.placeholderTitulo')}
           placeholderTextColor={COLORS.muted}
           value={titulo}
           onChangeText={setTitulo}
@@ -64,17 +66,6 @@ return (
 
         <View style={{ flex: 1 }} />
       </ScrollView>
-
-      <View style={styles.rodape}>
-        <TouchableOpacity style={styles.btnExercicio}>
-          <Ionicons name="add" size={16} color={COLORS.green} />
-          <Text style={styles.btnExercicioText}>Exercício</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.btnDescartarSolido}>
-          <Ionicons name="trash-outline" size={16} color={COLORS.muted} />
-          <Text style={styles.btnDescartarSolidoText}>Descartar Sessão</Text>
-        </TouchableOpacity>
-      </View>
 
       <BottomNavBar activeTab="treino" />
     </SafeAreaView>
@@ -97,10 +88,4 @@ const styles = StyleSheet.create({
   btnUsarSessaoText: { color: '#000', fontWeight: '700' },
   label: { color: COLORS.text, fontWeight: '600', marginBottom: 8 },
   input: { backgroundColor: COLORS.inputBg, color: COLORS.text, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
-  spacer: { flex: 1, minHeight: 18 },
-  rodape: { gap: 10, marginBottom: 8 },
-  btnExercicio: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.green, paddingVertical: 12, borderRadius: 12 },
-  btnExercicioText: { color: COLORS.green, fontWeight: '700' },
-  btnDescartarSolido: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.card, paddingVertical: 12, borderRadius: 12 },
-  btnDescartarSolidoText: { color: COLORS.muted, fontWeight: '600' },
 });

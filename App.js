@@ -17,6 +17,8 @@ import {
 } from '@react-navigation/native-stack';
 
 import Perfil from './src/Perfil/Perfil';
+import Evolucao from './src/Perfil/Evolucao';
+import Configuracoes from './src/configuracoes/configuracoes';
 import Cadastro from './src/telasCadastro/Cadastro';
 import Entrar from './src/telasLogin/Entrar';
 import PesoScreen from './src/conversoes/peso';
@@ -32,13 +34,29 @@ import Batimento from './src/Relogio/batimento';
 import Calorias from './src/Relogio/calorias';
 import Genero from './src/genero/genero';
 import Ranking from './src/ranking/ranking';
+import { getSession, getOnboardingComplete, migrarUsuarioLegado } from './src/services/storage';
+import { IdiomaProvider } from './src/services/idioma';
 
 const Stack = createNativeStackNavigator();
 
 function SplashScreen({ navigation }) {
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace('Cadastro');
+    const timer = setTimeout(async () => {
+      let destino = 'Cadastro';
+
+      try {
+        await migrarUsuarioLegado();
+        const sessao = await getSession();
+        const onboarding = await getOnboardingComplete();
+
+        if (sessao) {
+          destino = onboarding ? 'TreinoHub' : 'Peso';
+        }
+      } catch (error) {
+        console.warn('Erro ao restaurar sessão:', error);
+      }
+
+      navigation.replace(destino);
     }, 3000);
 
     return () => clearTimeout(timer);
@@ -59,7 +77,8 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <NavigationContainer>
+      <IdiomaProvider>
+        <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Splash"
           screenOptions={{
@@ -106,6 +125,16 @@ export default function App() {
         />
 
         <Stack.Screen
+          name="Evolucao"
+          component={Evolucao}
+        />
+
+        <Stack.Screen
+          name="Configuracoes"
+          component={Configuracoes}
+        />
+
+        <Stack.Screen
           name="Planos"
           component={Mensal}
         />
@@ -147,6 +176,7 @@ export default function App() {
 
         </Stack.Navigator>
       </NavigationContainer>
+      </IdiomaProvider>
     </SafeAreaProvider>
   );
 }

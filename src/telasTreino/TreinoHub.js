@@ -1,17 +1,69 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
+import { getWorkoutHistory } from '../services/storage';
+import { useIdioma } from '../services/idioma';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', laranja: '#FF7A1A' };
 
 const SEMANA = [];
 
+function calcularStreak(historico) {
+  const dias = new Set();
+
+  for (const item of historico || []) {
+    if (!item?.data) {
+      continue;
+    }
+    const data = new Date(item.data);
+    if (Number.isNaN(data.getTime())) {
+      continue;
+    }
+    const dia = new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+    dias.add(dia);
+  }
+
+  if (dias.size === 0) {
+    return 0;
+  }
+
+  const hoje = new Date();
+  const diaHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+  const msDia = 24 * 60 * 60 * 1000;
+  let atual = dias.has(diaHoje) ? diaHoje : diaHoje - msDia;
+  let streak = 0;
+
+  while (dias.has(atual)) {
+    streak += 1;
+    atual -= msDia;
+  }
+
+  return streak;
+}
+
 export default function TreinoHub({ navigation }) {
+  const { t } = useIdioma();
   const nomeUsuario = useNomeUsuario();
+  const [streak, setStreak] = useState(0);
+
+  useEffect(() => {
+    let ativo = true;
+
+    (async () => {
+      const historico = await getWorkoutHistory();
+      if (ativo) {
+        setStreak(calcularStreak(historico));
+      }
+    })();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -23,10 +75,10 @@ export default function TreinoHub({ navigation }) {
         <View style={styles.header}>
           <View style={styles.streak}>
             <Ionicons name="flame" size={18} color={COLORS.laranja} />
-            <Text style={styles.streakTexto}>0</Text>
+            <Text style={styles.streakTexto}>{streak}</Text>
           </View>
           <TouchableOpacity style={styles.userBox} onPress={() => navigation?.navigate('Perfil')} activeOpacity={0.7}>
-            <Text style={styles.tituloSecundario}>Evolução diária</Text>
+            <Text style={styles.tituloSecundario}>{t('comum.evolucaoDiaria')}</Text>
             <View style={styles.userRow}>
               <View style={styles.avatar} />
               <Text style={styles.userNome} numberOfLines={1} ellipsizeMode="tail">{nomeUsuario}</Text>
@@ -36,10 +88,10 @@ export default function TreinoHub({ navigation }) {
             <TouchableOpacity
               style={styles.rankingButton}
               onPress={() => navigation?.navigate('Ranking')}
-              accessibilityLabel="Abrir ranking"
+              accessibilityLabel={t('comum.abrirRanking')}
             >
               <Ionicons name="trophy-outline" size={18} color={COLORS.text} />
-              <Text style={styles.rankingText}>Ranking</Text>
+              <Text style={styles.rankingText}>{t('comum.ranking')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.proChip}
@@ -61,15 +113,15 @@ export default function TreinoHub({ navigation }) {
           </View>
         )}
 
-        <Text style={styles.sessaoTitulo}>Sessão de Treino</Text>
+        <Text style={styles.sessaoTitulo}>{t('treinoHub.sessaoTreino')}</Text>
 
         <TouchableOpacity style={styles.btnIniciar} onPress={() => navigation?.navigate('SessaoAtiva')}>
-          <Text style={styles.btnIniciarText}>Iniciar treino</Text>
+          <Text style={styles.btnIniciarText}>{t('treinoHub.iniciar')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.btnCriar} onPress={() => navigation?.navigate('NovaSessao')}>
           <Ionicons name="add" size={18} color="#000" />
-          <Text style={styles.btnCriarText}>Criar sessão de treino</Text>
+          <Text style={styles.btnCriarText}>{t('treinoHub.criar')}</Text>
         </TouchableOpacity>
       </ScrollView>
 

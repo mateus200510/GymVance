@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
   Alert,
   Linking,
@@ -18,6 +17,7 @@ import { getProgressPhotos, saveProgressPhoto } from '../services/storage';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
+import { useIdioma } from '../services/idioma';
 
 const DIAS_SEMANA = [];
 
@@ -37,8 +37,8 @@ function BarraProgresso({ percentual, cor = '#3DDC5C' }) {
 }
 
 function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuario }) {
+  const { t } = useIdioma();
   const percentualKcal = KCAL_META ? Math.min(100, Math.round((KCAL_ATUAL / KCAL_META) * 100)) : null;
-  const [pergunta, setPergunta] = useState('');
 
   return (
     <ScrollView
@@ -86,7 +86,7 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuar
       {/* Consumo diário */}
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
-          <Text style={styles.cardTitulo}>Consumo Diário</Text>
+          <Text style={styles.cardTitulo}>{t('alimentacao.consumoDiario')}</Text>
           <Text style={styles.cardPercentual}>{percentualKcal === null ? '—' : `${percentualKcal}%`}</Text>
         </View>
         <Text style={styles.kcalTexto}>
@@ -113,11 +113,7 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuar
 
       {/* Refeições de hoje */}
       <View style={styles.secaoHeaderRow}>
-        <Text style={styles.secaoTitulo}>Refeições de hoje</Text>
-        <TouchableOpacity style={styles.botaoAdicionar}>
-          <Feather name="plus" size={14} color="#000" />
-          <Text style={styles.botaoAdicionarTexto}>Adicionar</Text>
-        </TouchableOpacity>
+        <Text style={styles.secaoTitulo}>{t('alimentacao.refeicoesHoje')}</Text>
       </View>
 
       {REFEICOES.map((refeicao) => (
@@ -130,43 +126,20 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuar
         </View>
       ))}
 
-      {/* Assistente */}
-      <View style={styles.assistenteBox}>
-        <View style={styles.assistenteHeader}>
-          <View style={styles.assistenteIcone}>
-            <Feather name="cpu" size={16} color="#000" />
-          </View>
-          <Text style={styles.assistenteTexto}>
-            Oi! Sou o assistente do GymVance. Como posso te ajudar com sua alimentação hoje?
-          </Text>
-        </View>
-        <View style={styles.assistenteInputRow}>
-          <TextInput
-            style={styles.assistenteInput}
-            placeholder="Digite sua pergunta..."
-            placeholderTextColor="#6E6E73"
-            value={pergunta}
-            onChangeText={setPergunta}
-          />
-          <TouchableOpacity style={styles.assistenteEnviar}>
-            <Feather name="arrow-right" size={16} color="#000" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
       <View style={{ height: 90 }} />
     </ScrollView>
   );
 }
 
 function TelaGaleria({ onVoltar, fotos = [] }) {
+  const { t } = useIdioma();
   return (
     <View style={styles.container}>
       <View style={styles.galeriaHeader}>
         <TouchableOpacity onPress={onVoltar}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.galeriaTitulo}>Minhas fotos</Text>
+        <Text style={styles.galeriaTitulo}>{t('alimentacao.minhasFotos')}</Text>
         <View style={styles.galeriaHeaderIcones}>
           <Feather name="search" size={20} color="#fff" style={{ marginRight: 16 }} />
           <Feather name="more-vertical" size={20} color="#fff" />
@@ -177,7 +150,7 @@ function TelaGaleria({ onVoltar, fotos = [] }) {
         {fotos.length === 0 ? (
           <View style={styles.galeriaVazia}>
             <Feather name="image" size={28} color="#3A3A3C" />
-            <Text style={styles.galeriaVaziaTexto}>Nenhuma foto salva ainda.</Text>
+            <Text style={styles.galeriaVaziaTexto}>{t('alimentacao.semFotos')}</Text>
           </View>
         ) : (
           <View style={styles.galeriaGrid}>
@@ -193,19 +166,19 @@ function TelaGaleria({ onVoltar, fotos = [] }) {
       <View style={styles.navBar}>
         <View style={styles.navItem}>
           <Feather name="camera" size={20} color="#3DDC5C" />
-          <Text style={[styles.navLabel, { color: '#3DDC5C' }]}>Fotos</Text>
+          <Text style={[styles.navLabel, { color: '#3DDC5C' }]}>{t('alimentacao.abasFotos')}</Text>
         </View>
         <View style={styles.navItem}>
           <Feather name="folder" size={20} color="#8E8E93" />
-          <Text style={styles.navLabel}>Álbuns</Text>
+          <Text style={styles.navLabel}>{t('alimentacao.abasAlbuns')}</Text>
         </View>
         <View style={styles.navItem}>
           <Feather name="clock" size={20} color="#8E8E93" />
-          <Text style={styles.navLabel}>Histórias</Text>
+          <Text style={styles.navLabel}>{t('alimentacao.abasHistorias')}</Text>
         </View>
         <View style={styles.navItem}>
           <Feather name="more-horizontal" size={20} color="#8E8E93" />
-          <Text style={styles.navLabel}>Mais</Text>
+          <Text style={styles.navLabel}>{t('alimentacao.abasMais')}</Text>
         </View>
       </View>
     </View>
@@ -213,6 +186,7 @@ function TelaGaleria({ onVoltar, fotos = [] }) {
 }
 
 export default function Alimentacao({ navigation }) {
+  const { t } = useIdioma();
   const nomeUsuario = useNomeUsuario();
   const [tela, setTela] = useState('dashboard');
   const [cameraPermission, requestPermission] = useCameraPermissions();
@@ -235,7 +209,7 @@ export default function Alimentacao({ navigation }) {
   const abrirGaleria = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permissão necessária', 'Precisamos acessar suas fotos para salvar seu progresso.');
+      Alert.alert(t('alimentacao.permissaoTitulo'), t('alimentacao.permissaoMsg'));
       if (!permission.canAskAgain) {
         Linking.openSettings();
       }
@@ -254,11 +228,11 @@ export default function Alimentacao({ navigation }) {
 
     let salvas;
 
-    try {
+try {
       salvas = await saveProgressPhoto(result.assets[0].uri, { origem: 'galeria' });
     } catch (error) {
       console.warn('Erro ao salvar foto:', error);
-      Alert.alert('Erro', 'Não foi possível salvar a foto.');
+      Alert.alert(t('comum.erro'), t('alimentacao.erroSalvarFoto'));
       return;
     }
 
@@ -273,11 +247,11 @@ export default function Alimentacao({ navigation }) {
 
       if (!permissao.granted) {
         if (permissao.canAskAgain === false) {
-          Alert.alert('Câmera indisponível', 'Abra as configurações do dispositivo para permitir o acesso à câmera.');
+          Alert.alert(t('alimentacao.cameraIndisponivel'), t('alimentacao.cameraMsg'));
           Linking.openSettings();
           return;
         }
-        Alert.alert('Permissão necessária', 'Precisamos da câmera para registrar sua refeição.');
+        Alert.alert(t('alimentacao.permissaoTitulo'), t('alimentacao.cameraPermMsg'));
         return;
       }
     }
@@ -299,7 +273,7 @@ export default function Alimentacao({ navigation }) {
       }
       setTela('dashboard');
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível capturar a imagem.');
+      Alert.alert(t('comum.erro'), t('alimentacao.erroCapturar'));
     }
   };
 
@@ -370,19 +344,10 @@ const styles = StyleSheet.create({
   macroMeta: { color: '#8E8E93', fontWeight: '400' },
   secaoHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   secaoTitulo: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  botaoAdicionar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#3DDC5C', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  botaoAdicionarTexto: { color: '#000', fontSize: 12, fontWeight: '600', marginLeft: 4 },
   refeicaoItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 10 },
   refeicaoNome: { color: '#fff', fontSize: 14, fontWeight: '600' },
   refeicaoDescricao: { color: '#8E8E93', fontSize: 12, marginTop: 2 },
   refeicaoKcal: { color: '#3DDC5C', fontSize: 13, fontWeight: '600' },
-  assistenteBox: { backgroundColor: '#1C1C1E', borderRadius: 16, padding: 12, marginTop: 8 },
-  assistenteHeader: { flexDirection: 'row', alignItems: 'flex-start' },
-  assistenteIcone: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#3DDC5C', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
-  assistenteTexto: { color: '#D1D1D6', fontSize: 12, flex: 1, lineHeight: 17 },
-  assistenteInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  assistenteInput: { flex: 1, backgroundColor: '#2C2C2E', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, color: '#fff', fontSize: 13 },
-  assistenteEnviar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#3DDC5C', justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
   galeriaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, marginBottom: 16 },
   galeriaTitulo: { color: '#fff', fontSize: 17, fontWeight: '700' },
   galeriaHeaderIcones: { flexDirection: 'row' },

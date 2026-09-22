@@ -15,11 +15,13 @@ import * as Location from 'expo-location';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
+import { useIdioma } from '../services/idioma';
 import { getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
 
 // Tela de "Batimento Cardíaco" do GymVance
 // Mostra o BPM em destaque no círculo central e a queima diária logo abaixo
 export default function Batimento({ navigation }) {
+  const { t, numero } = useIdioma();
   const { width } = useWindowDimensions();
   const nomeUsuario = useNomeUsuario();
   const [bpmAtual, setBpmAtual] = useState(null);
@@ -41,17 +43,17 @@ export default function Batimento({ navigation }) {
 
       if (status !== 'granted') {
         if (!canAskAgain) {
-          Alert.alert('Localização bloqueada', 'Abra as configurações do aparelho para permitir o uso do GPS.');
+          Alert.alert(t('batimento.erroBloqueadoTitulo'), t('batimento.erroBloqueadoMsg'));
           Linking.openSettings();
         } else {
-          setGpsError('Permissão de localização negada.');
+          setGpsError(t('batimento.erroPermissao'));
         }
         return;
       }
 
       const providerStatus = await Location.getProviderStatusAsync();
       if (!providerStatus.locationServicesEnabled) {
-        setGpsError('GPS desativado. Ative a localização para continuar.');
+        setGpsError(t('batimento.erroGps'));
         return;
       }
 
@@ -63,7 +65,7 @@ export default function Batimento({ navigation }) {
       setLocation(posicao.coords);
       setPrecision(precisao);
     } catch (error) {
-      setGpsError('Não foi possível obter a localização agora.');
+      setGpsError(t('batimento.erroObter'));
     }
   };
 
@@ -97,12 +99,12 @@ export default function Batimento({ navigation }) {
 
   const statusPrecisao =
     precision === null
-      ? 'Aguardando...' 
+      ? t('batimento.aguardando')
       : precision < 10
-        ? '🟢 Alta precisão'
+        ? t('batimento.altaPrecisao')
         : precision <= 30
-          ? '🟡 Média precisão'
-          : '🔴 Baixa precisão';
+          ? t('batimento.mediaPrecisao')
+          : t('batimento.baixaPrecisao');
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -115,7 +117,7 @@ export default function Batimento({ navigation }) {
             <Text style={styles.avatarIcone}>👤</Text>
           </View>
           <View>
-            <Text style={styles.evolucaoTexto}>Evolução diária</Text>
+            <Text style={styles.evolucaoTexto}>{t('comum.evolucaoDiaria')}</Text>
             <Text style={styles.nomeUsuario}>{nomeUsuario}</Text>
           </View>
         </View>
@@ -144,14 +146,14 @@ export default function Batimento({ navigation }) {
       {/* Queima diária */}
       <View style={styles.blocoQueima}>
         <View style={styles.queimaCabecalho}>
-          <Text style={styles.queimaTitulo}>QUEIMA DIÁRIA</Text>
+          <Text style={styles.queimaTitulo}>{t('batimento.queimaDiaria')}</Text>
           <View style={styles.badgePercentual}>
             <Text style={styles.badgeTexto}>{percentualMeta === null ? '—' : `${percentualMeta}%`}</Text>
           </View>
         </View>
         <Text style={styles.queimaValor}>
-          {kcalQueimadas === null ? '—' : kcalQueimadas.toLocaleString('pt-BR')}{' '}
-          <Text style={styles.queimaMeta}>/ {kcalMeta === null ? '—' : kcalMeta.toLocaleString('pt-BR')} kcal</Text>
+          {kcalQueimadas === null ? '—' : numero(kcalQueimadas)}{' '}
+          <Text style={styles.queimaMeta}>/ {kcalMeta === null ? '—' : numero(kcalMeta)} kcal</Text>
         </Text>
         <View style={styles.barraFundo}>
           <View style={[styles.barraPreenchida, { width: `${percentualMeta ?? 0}%` }]} />
@@ -160,9 +162,9 @@ export default function Batimento({ navigation }) {
 
       <View style={styles.localizacaoBox}>
         <View style={styles.localizacaoHeader}>
-          <Text style={styles.localizacaoTitulo}>LOCALIZAÇÃO</Text>
+          <Text style={styles.localizacaoTitulo}>{t('batimento.localizacao')}</Text>
           <TouchableOpacity onPress={atualizarLocalizacao}>
-            <Text style={styles.localizacaoAtualizar}>Atualizar</Text>
+            <Text style={styles.localizacaoAtualizar}>{t('batimento.atualizar')}</Text>
           </TouchableOpacity>
         </View>
         {gpsError ? (
@@ -170,11 +172,11 @@ export default function Batimento({ navigation }) {
         ) : (
           <>
             <Text style={styles.localizacaoValor}>
-              {location ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : 'Buscando...' }
+              {location ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : t('batimento.buscando')}
             </Text>
             <Text style={styles.localizacaoPrecisao}>{statusPrecisao}</Text>
             <Text style={styles.localizacaoInfo}>
-              {precision !== null ? `Precisão: ${precision.toFixed(0)} m` : 'Precisão em análise'}
+              {precision !== null ? `${t('batimento.precisao')}: ${precision.toFixed(0)} m` : t('batimento.precisaoAnalise')}
             </Text>
           </>
         )}

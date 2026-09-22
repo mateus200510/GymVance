@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert,
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, AppState, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Accelerometer } from 'expo-sensors';
+import { useIsFocused } from '@react-navigation/native';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { saveWorkoutHistory } from '../services/storage';
+import { useIdioma } from '../services/idioma';
 
 const COLORS = {
   bg: '#121212',
@@ -19,43 +20,106 @@ const COLORS = {
   inputBg: '#2A2A2A',
 };
 
-export default function SessaoAtiva({ navigation }) {
+// Tipos de série: o identificador interno é o `tipo`; o rótulo/idioma só afeta a apresentação.
+const TIPOS = [
+  { tipo: 'NORMAL', sigla: '#' },
+  { tipo: 'AQUECIMENTO', sigla: 'A' },
+  { tipo: 'PREPARATORIA', sigla: 'P' },
+  { tipo: 'RECONHECIMENTO', sigla: 'R' },
+  { tipo: 'BACK_OFF', sigla: 'B' },
+  { tipo: 'DROPSET', sigla: 'D' },
+  { tipo: 'FALHA', sigla: 'F' },
+];
+
+function tipoDe(serie) {
+  return serie?.tipo || 'NORMAL';
+}
+
+function infoTipo(tipo) {
+  return TIPOS.find((t) => t.tipo === tipo) || TIPOS[0];
+}
+
+// Número visual: somente as séries NORMAL contam, na ordem em que aparecem no exercício.
+function numeroNormalDaSerie(series, serie) {
+  let count = 0;
+  for (const s of series) {
+    if (s.id === serie.id) {
+      return count + 1;
+    }
+    if (tipoDe(s) === 'NORMAL') {
+      count += 1;
+    }
+  }
+  return count + 1;
+}
+
+function rotuloDaSerie(series, serie) {
+  if (tipoDe(serie) === 'NORMAL') {
+    return String(numeroNormalDaSerie(series, serie));
+  }
+  return infoTipo(tipoDe(serie)).sigla;
+}
+
+export default function SessaoAtiva({ navigation, route }) {
+  const { t } = useIdioma();
   const [series, setSeries] = useState([]);
   const [tempo, setTempo] = useState('00:00:00');
-  const [instabilidade, setInstabilidade] = useState('');
-  const ultimaAceleracao = useRef({ x: 0, y: 0, z: 0 });
+  const [serieEditandoId, setSerieEditandoId] = useState(null);
+  const isFocused = useIsFocused();
+  const tituloSessao = (route?.params?.titulo || '').trim();
+  const acumuladoMs = useRef(0);
+  const inicioPeriodo = useRef(null);
+  const proximoId = useRef(1);
+
+  const serieEditando = series.find((s) => s.id === serieEditandoId) || null;
 
   useEffect(() => {
-    let subscription;
+    let timer = null;
 
-    try {
-      subscription = Accelerometer.addListener((data) => {
-        ultimaAceleracao.current = data;
-      });
-    } catch (error) {
-      console.warn('Acelerômetro indisponível:', error);
-    }
-
-    return () => {
-      if (subscription) {
-        subscription.remove();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const inicio = Date.now();
-
-    const timer = setInterval(() => {
-      const segundos = Math.floor((Date.now() - inicio) / 1000);
+    const atualizar = () => {
+      const total = acumuladoMs.current + (inicioPeriodo.current ? Date.now() - inicioPeriodo.current : 0);
+      const segundos = Math.floor(total / 1000);
       const horas = String(Math.floor(segundos / 3600)).padStart(2, '0');
       const minutos = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
       const secs = String(segundos % 60).padStart(2, '0');
       setTempo(`${horas}:${minutos}:${secs}`);
-    }, 1000);
+    };
 
-    return () => clearInterval(timer);
-  }, []);
+    const parar = () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      if (inicioPeriodo.current) {
+        acumuladoMs.current += Date.now() - inicioPeriodo.current;
+        inicioPeriodo.current = null;
+      }
+      atualizar();
+    };
+
+    const iniciar = () => {
+      inicioPeriodo.current = Date.now();
+      atualizar();
+      timer = setInterval(atualizar, 1000);
+    };
+
+    const sub = AppState.addEventListener('change', (estado) => {
+      if (estado !== 'active') {
+        parar();
+      } else if (isFocused) {
+        iniciar();
+      }
+    });
+
+    if (isFocused) {
+      iniciar();
+    }
+
+    return () => {
+      sub.remove();
+      parar();
+    };
+  }, [isFocused]);
 
   const toggleConcluido = (id) => {
     setSeries((prev) =>
@@ -63,11 +127,27 @@ export default function SessaoAtiva({ navigation }) {
     );
   };
 
+  const toggleFalhou = (id) => {
+    setSeries((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, falhou: !s.falhou, concluido: false } : s))
+    );
+  };
+
   const adicionarSerie = () => {
     setSeries((prev) => [
       ...prev,
-      { id: prev.length + 1, kg: '', reps: '', concluido: false, falhou: false, nota: '' },
+      { id: proximoId.current++, tipo: 'NORMAL', kg: '', reps: '', concluido: false, falhou: false, nota: '' },
     ]);
+  };
+
+  const alterarTipoSerie = (id, tipo) => {
+    setSeries((prev) => prev.map((s) => (s.id === id ? { ...s, tipo } : s)));
+    setSerieEditandoId(null);
+  };
+
+  const removerSerie = (id) => {
+    setSeries((prev) => prev.filter((s) => s.id !== id));
+    setSerieEditandoId(null);
   };
 
   const atualizarNota = (id, nota) => {
@@ -83,39 +163,52 @@ export default function SessaoAtiva({ navigation }) {
   };
 
   const handleConcluir = async () => {
-    const magnitude = Math.sqrt(
-      ultimaAceleracao.current.x ** 2 +
-      ultimaAceleracao.current.y ** 2 +
-      ultimaAceleracao.current.z ** 2
-    );
-
-    if (Number.isFinite(magnitude) && magnitude > 2.0) {
-      setInstabilidade('Instabilidade Física Detectada');
-      Alert.alert('Instabilidade Física Detectada');
+    if (series.length === 0) {
+      Alert.alert(t('sessaoAtiva.treinoVazio'), t('sessaoAtiva.treinoVazioMsg'));
       return;
     }
 
     try {
       const treino = {
-        treino: 'Sessão Ativa',
+        treino: tituloSessao || t('sessaoAtiva.semTitulo'),
         data: new Date().toISOString(),
         duracao: tempo,
         exercicios: series,
       };
 
       await saveWorkoutHistory(treino);
-      Alert.alert('Treino concluído', 'Seu treino foi salvo no histórico local.');
+      Alert.alert(t('sessaoAtiva.treinoConcluido'), t('sessaoAtiva.salvoHistorico'));
       navigation?.replace('TreinoHub');
     } catch (error) {
       console.warn('Erro ao salvar treino:', error);
-      Alert.alert('Erro', 'Não foi possível salvar o treino localmente.');
+      Alert.alert(t('comum.erro'), t('sessaoAtiva.erroSalvar'));
     }
   };
 
-return (
+const handleDescartarTreino = () => {
+    Alert.alert(
+      t('sessaoAtiva.descartarTreino'),
+      t('sessaoAtiva.confirmarDescartar'),
+      [
+        { text: t('sessaoAtiva.cancelar'), style: 'cancel' },
+        { text: t('comum.descartar'), style: 'destructive', onPress: () => navigation?.goBack() },
+      ]
+    );
+  };
+
+  const handleVoltar = () => {
+    if (series.length === 0) {
+      navigation?.goBack();
+      return;
+    }
+
+    handleDescartarTreino();
+  };
+
+  return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation?.goBack()}>
+        <TouchableOpacity onPress={handleVoltar}>
           <Ionicons name="chevron-back" size={26} color={COLORS.text} />
         </TouchableOpacity>
         <View style={styles.timerPill}>
@@ -125,48 +218,47 @@ return (
           <TouchableOpacity
             style={styles.rankingButton}
             onPress={() => navigation?.navigate('Ranking')}
-            accessibilityLabel="Abrir ranking"
+            accessibilityLabel={t('comum.abrirRanking')}
           >
             <Ionicons name="trophy-outline" size={16} color={COLORS.text} />
-            <Text style={styles.rankingText}>Ranking</Text>
+            <Text style={styles.rankingText}>{t('comum.ranking')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.concluirBtn} onPress={handleConcluir}>
-            <Text style={styles.concluirBtnText}>Concluir</Text>
+            <Text style={styles.concluirBtnText}>{t('sessaoAtiva.concluir')}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.sessaoAtivaTag}>
-        <Text style={styles.sessaoAtivaTagText}>SESSÃO ATIVA</Text>
+        <Text style={styles.sessaoAtivaTagText}>{t('sessaoAtiva.tag')}</Text>
       </View>
 
-      {instabilidade !== '' && (
-        <Text style={styles.instabilidadeTexto}>{instabilidade}</Text>
-      )}
-
-      <Text style={styles.titulo}>Evolução Diária</Text>
+      <Text style={styles.titulo}>{t('comum.evolucaoDiaria')}</Text>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.exercicioNome} />
-            <Ionicons name="ellipsis-vertical" size={18} color={COLORS.muted} />
+            <Text style={styles.exercicioNome}>{tituloSessao || t('sessaoAtiva.semTitulo')}</Text>
           </View>
 
           <View style={styles.tabelaHeader}>
-            <Text style={[styles.colLabel, { flex: 0.6 }]}>Série</Text>
+            <Text style={[styles.colLabel, { flex: 0.6 }]}>{t('sessaoAtiva.colSerie')}</Text>
             <Text style={[styles.colLabel, { flex: 1 }]}>Kg</Text>
             <Text style={[styles.colLabel, { flex: 1 }]}>Reps</Text>
-            <Text style={[styles.colLabel, { flex: 1 }]}>Notas</Text>
+            <Text style={[styles.colLabel, { flex: 1 }]}>{t('sessaoAtiva.colNotas')}</Text>
             <View style={{ width: 60 }} />
           </View>
 
-          {series.map((s, idx) => (
+          {series.map((s) => (
             <View key={s.id}>
               <View style={styles.linhaSerie}>
-                <View style={[styles.serieBadge, { flex: 0.6 }]}>
-                  <Text style={styles.serieBadgeText}>{idx + 1}</Text>
-                </View>
+                <TouchableOpacity
+              style={[styles.serieBadge, { flex: 0.6 }]}
+              onPress={() => setSerieEditandoId(s.id)}
+              accessibilityLabel={t('sessaoAtiva.acessibilidadeBadge')}
+            >
+              <Text style={styles.serieBadgeText}>{rotuloDaSerie(series, s)}</Text>
+            </TouchableOpacity>
                 <TextInput
                   style={[styles.valorInput, { flex: 1 }]}
                   value={s.kg}
@@ -187,6 +279,7 @@ return (
                 <View style={styles.acoesLinha}>
                   <TouchableOpacity
                     style={[styles.circulo, s.falhou && styles.circuloRed]}
+                    onPress={() => toggleFalhou(s.id)}
                   >
                     <Ionicons name="close" size={14} color="#fff" />
                   </TouchableOpacity>
@@ -199,7 +292,7 @@ return (
                 </View>
               </View>
               <TextInput
-                placeholder="Adicionar notas..."
+                placeholder={t('sessaoAtiva.notaPlaceholder')}
                 placeholderTextColor={COLORS.muted}
                 value={s.nota}
                 onChangeText={(text) => atualizarNota(s.id, text)}
@@ -211,26 +304,73 @@ return (
           <View style={styles.botoesCard}>
             <TouchableOpacity style={styles.btnSerie} onPress={adicionarSerie}>
               <Ionicons name="add" size={16} color={COLORS.green} />
-              <Text style={styles.btnSerieText}>Série</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.btnDescartar}>
-              <Ionicons name="trash-outline" size={16} color={COLORS.muted} />
-              <Text style={styles.btnDescartarText}>Descartar</Text>
+              <Text style={styles.btnSerieText}>{t('sessaoAtiva.adicionarSerie')}</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
       <View style={styles.rodapeAcoes}>
-        <TouchableOpacity style={styles.btnExercicio}>
-          <Ionicons name="add" size={18} color="#000" />
-          <Text style={styles.btnExercicioText}>Exercício</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.btnDescartarTreino}>
+        <TouchableOpacity style={styles.btnDescartarTreino} onPress={handleDescartarTreino}>
           <Ionicons name="trash-outline" size={16} color={COLORS.muted} />
-          <Text style={styles.btnDescartarText}>Descartar Treino</Text>
+          <Text style={styles.btnDescartarText}>{t('sessaoAtiva.descartarTreino')}</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={serieEditando !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSerieEditandoId(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalFundo}
+          activeOpacity={1}
+          onPress={() => setSerieEditandoId(null)}
+        >
+          <View style={styles.menuSerie}>
+            <Text style={styles.menuTitulo}>
+              {serieEditando
+                ? (tipoDe(serieEditando) === 'NORMAL'
+                    ? `${t('sessaoAtiva.serieLabel')} ${numeroNormalDaSerie(series, serieEditando)}`
+                    : t(`tipo.${tipoDe(serieEditando)}`))
+                : ''}
+            </Text>
+            <Text style={styles.menuSubtitulo}>{t('sessaoAtiva.menuSubtitulo')}</Text>
+
+            {TIPOS.map((item) => {
+              const ativo = serieEditando && tipoDe(serieEditando) === item.tipo;
+              return (
+                <TouchableOpacity
+                  key={item.tipo}
+                  style={[styles.menuItem, ativo && styles.menuItemAtivo]}
+                  onPress={() => serieEditando && alterarTipoSerie(serieEditando.id, item.tipo)}
+                >
+                  <View style={[styles.menuSigla, item.tipo === 'NORMAL' && styles.menuSiglaNormal]}>
+                    <Text style={styles.menuSiglaText}>{item.sigla}</Text>
+                  </View>
+                  <Text style={[styles.menuItemLabel, ativo && styles.menuItemLabelAtivo]}>{t(`tipo.${item.tipo}`)}</Text>
+                  {ativo && <Ionicons name="checkmark" size={16} color={COLORS.green} />}
+                </TouchableOpacity>
+              );
+            })}
+
+            <View style={styles.menuDivisor} />
+
+            <TouchableOpacity
+              style={styles.menuRemover}
+              onPress={() => serieEditando && removerSerie(serieEditando.id)}
+            >
+              <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+              <Text style={styles.menuRemoverText}>{t('sessaoAtiva.removerSerie')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuCancelar} onPress={() => setSerieEditandoId(null)}>
+              <Text style={styles.menuCancelarText}>{t('sessaoAtiva.cancelar')}</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <BottomNavBar activeTab="treino" />
     </SafeAreaView>
@@ -249,7 +389,6 @@ const styles = StyleSheet.create({
   concluirBtnText: { color: '#000', fontWeight: '700' },
   sessaoAtivaTag: { marginTop: 16 },
   sessaoAtivaTagText: { color: COLORS.red, fontWeight: '700', fontSize: 12, letterSpacing: 1 },
-  instabilidadeTexto: { color: COLORS.red, fontWeight: '700', fontSize: 12, marginTop: 8 },
   titulo: { color: COLORS.text, fontSize: 24, fontWeight: '700', marginTop: 4, marginBottom: 16 },
   card: { backgroundColor: COLORS.card, borderRadius: 16, padding: 14 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
@@ -269,10 +408,23 @@ const styles = StyleSheet.create({
   botoesCard: { flexDirection: 'row', gap: 10, marginTop: 4 },
   btnSerie: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.inputBg, paddingVertical: 10, borderRadius: 10, flex: 1, justifyContent: 'center' },
   btnSerieText: { color: COLORS.green, fontWeight: '600' },
-  btnDescartar: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.inputBg, paddingVertical: 10, borderRadius: 10, flex: 1, justifyContent: 'center' },
   btnDescartarText: { color: COLORS.muted, fontWeight: '600', fontSize: 13 },
   rodapeAcoes: { gap: 10, marginBottom: 8 },
-  btnExercicio: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 12, borderRadius: 12 },
-  btnExercicioText: { color: '#000', fontWeight: '700' },
   btnDescartarTreino: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.card, paddingVertical: 12, borderRadius: 12 },
+  modalFundo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
+  menuSerie: { backgroundColor: '#1A1A1A', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 28 },
+  menuTitulo: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
+  menuSubtitulo: { color: COLORS.muted, fontSize: 12, marginTop: 2, marginBottom: 12 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10 },
+  menuItemAtivo: { backgroundColor: COLORS.inputBg },
+  menuItemLabel: { color: COLORS.text, fontSize: 14, flex: 1 },
+  menuItemLabelAtivo: { fontWeight: '700' },
+  menuSigla: { width: 24, height: 24, borderRadius: 6, backgroundColor: COLORS.inputBg, alignItems: 'center', justifyContent: 'center' },
+  menuSiglaNormal: { backgroundColor: COLORS.card },
+  menuSiglaText: { color: COLORS.text, fontWeight: '700', fontSize: 12 },
+  menuDivisor: { height: StyleSheet.hairlineWidth, backgroundColor: '#333', marginVertical: 8 },
+  menuRemover: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 8 },
+  menuRemoverText: { color: COLORS.red, fontSize: 14, fontWeight: '700' },
+  menuCancelar: { marginTop: 6, backgroundColor: COLORS.card, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  menuCancelarText: { color: COLORS.text, fontWeight: '700' },
 });

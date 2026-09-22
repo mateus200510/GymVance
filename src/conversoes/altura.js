@@ -6,15 +6,19 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getUserProfile, saveUserProfile } from '../services/storage';
+import { useIdioma } from '../services/idioma';
 
 const CM_PARA_IN = 0.393701;
 
 export default function AlturaScreen({ navigation }) {
+  const { t } = useIdioma();
   const [altura, setAltura] = useState('');
   const [unidade, setUnidade] = useState('cm'); // 'cm' | 'in'
 
@@ -48,6 +52,10 @@ export default function AlturaScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
@@ -61,16 +69,16 @@ export default function AlturaScreen({ navigation }) {
 
       <View style={styles.progressBar} />
 
-      <Text style={styles.step}>Etapa 3 de 4</Text>
-      <Text style={styles.title}>Qual sua altura?</Text>
+      <Text style={styles.step}>{t('altura.etapa')}</Text>
+      <Text style={styles.title}>{t('altura.titulo')}</Text>
 
-      <Text style={styles.label}>Altura</Text>
+      <Text style={styles.label}>{t('altura.nome')}</Text>
       <View style={styles.row}>
         <TextInput
           style={styles.input}
           placeholder="175"
           placeholderTextColor="#555"
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           value={altura}
           onChangeText={setAltura}
         />
@@ -89,7 +97,7 @@ export default function AlturaScreen({ navigation }) {
           const valor = Number.parseFloat(String(altura).replace(',', '.'));
 
           if (!altura || Number.isNaN(valor) || valor <= 0) {
-            Alert.alert('Altura obrigatória', 'Informe uma altura válida para continuar.');
+            Alert.alert(t('altura.obrigatoria'), t('altura.erroValor'));
             return;
           }
 
@@ -97,15 +105,16 @@ export default function AlturaScreen({ navigation }) {
             await saveUserProfile({ altura: valor, alturaUnidade: unidade });
           } catch (error) {
             console.warn('Erro ao salvar altura:', error);
-            Alert.alert('Erro', 'Não foi possível salvar seus dados. Tente novamente.');
+            Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
             return;
           }
 
           navigation.navigate('Genero');
         }}
       >
-        <Text style={styles.advanceText}>Avançar</Text>
+        <Text style={styles.advanceText}>{t('comum.avancar')}</Text>
       </TouchableOpacity>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

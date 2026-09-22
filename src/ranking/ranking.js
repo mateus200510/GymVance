@@ -10,13 +10,19 @@ import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-ico
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useIdioma } from '../services/idioma';
 
 const PODIO = [];
 
-const ABAS = ['Semanal', 'Mensal', 'Geral'];
+const ABAS = [
+  { id: 'semanal', label: 'ranking.semanal' },
+  { id: 'mensal', label: 'ranking.mensal' },
+  { id: 'geral', label: 'ranking.todas' },
+];
 
 export default function Ranking({ navigation }) {
-  const [abaAtiva, setAbaAtiva] = useState('Semanal');
+  const { t } = useIdioma();
+  const [abaAtiva, setAbaAtiva] = useState('semanal');
   const [dadosRanking] = useState([]);
 
   return (
@@ -35,8 +41,8 @@ export default function Ranking({ navigation }) {
           </Text>
         </View>
 
-        <Text style={styles.titulo}>Ranking Geral</Text>
-        <Text style={styles.subtitulo}>Supere seus limites e conquiste o topo!</Text>
+        <Text style={styles.titulo}>{t('ranking.geral')}</Text>
+        <Text style={styles.subtitulo}>{t('ranking.subtitulo')}</Text>
 
         {PODIO.length > 0 && (
         <View style={styles.podioRow}>
@@ -65,9 +71,9 @@ export default function Ranking({ navigation }) {
                 <Text style={styles.posicaoBadgeText}>{item.posicao}º</Text>
               </View>
               <Text style={styles.podioNome}>{item.nome}</Text>
-              <View style={styles.podioDiasRow}>
+              <View style={[styles.podioDiasRow]}>
                 <MaterialCommunityIcons name="fire" size={13} color="#3DDC5C" />
-                <Text style={styles.podioDias}>{item.dias} dias</Text>
+                <Text style={styles.podioDias}>{item.dias} {t('ranking.dias')}</Text>
               </View>
             </View>
           ))}
@@ -77,11 +83,11 @@ export default function Ranking({ navigation }) {
         <View style={styles.abasRow}>
           {ABAS.map((aba) => (
             <TouchableOpacity
-              key={aba}
-              style={[styles.aba, abaAtiva === aba && styles.abaAtiva]}
-              onPress={() => setAbaAtiva(aba)}
+              key={aba.id}
+              style={[styles.aba, abaAtiva === aba.id && styles.abaAtiva]}
+              onPress={() => setAbaAtiva(aba.id)}
             >
-              <Text style={[styles.abaText, abaAtiva === aba && styles.abaTextAtiva]}>{aba}</Text>
+              <Text style={[styles.abaText, abaAtiva === aba.id && styles.abaTextAtiva]}>{t(aba.label)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -98,11 +104,11 @@ export default function Ranking({ navigation }) {
                   <Text style={styles.linhaNome}>{item.nome}</Text>
                   {item.voce && (
                     <View style={styles.voceBadge}>
-                      <Text style={styles.voceBadgeText}>VOCÊ</Text>
+                      <Text style={styles.voceBadgeText}>{t('ranking.voce')}</Text>
                     </View>
                   )}
                 </View>
-                <Text style={styles.linhaTreinos}>{item.treinos} treinos concluídos</Text>
+                <Text style={styles.linhaTreinos}>{item.treinos} {t('ranking.treinos')}</Text>
               </View>
               <View style={styles.linhaDiasRow}>
                 <MaterialCommunityIcons name="fire" size={14} color="#3DDC5C" />
@@ -111,8 +117,8 @@ export default function Ranking({ navigation }) {
             </View>
           )) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>Ranking ainda não está disponível</Text>
-              <Text style={styles.emptyText}>Volte mais tarde para acompanhar sua posição.</Text>
+              <Text style={styles.emptyTitle}>{t('ranking.vazioTitulo')}</Text>
+              <Text style={styles.emptyText}>{t('ranking.vazioTexto')}</Text>
             </View>
           )}
         </View>

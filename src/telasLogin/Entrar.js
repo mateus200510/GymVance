@@ -13,6 +13,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useIdioma } from '../services/idioma';
+import { authenticateUser, createSession } from '../services/storage';
+
 const COLORS = {
   bg: '#121212',
   card: '#1E1E1E',
@@ -24,6 +27,7 @@ const COLORS = {
 };
 
 export default function Entrar({ navigation }) {
+  const { t } = useIdioma();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
 
@@ -31,22 +35,27 @@ export default function Entrar({ navigation }) {
 
   const [erro, setErro] = useState('');
 
-  const fazerLogin = () => {
+  const fazerLogin = async () => {
     if (!email.includes('@') || !email.includes('.')) {
-      setErro('Insira um e-mail válido.');
+      setErro(t('cadastro.erroEmail'));
       return;
     }
 
     if (senha.length < 6) {
-      setErro('A senha deve ter pelo menos 6 caracteres.');
+      setErro(t('cadastro.erroSenhaCurta'));
+      return;
+    }
+
+    // Autenticação local (sem backend).
+    const autenticado = await authenticateUser(email, senha);
+    if (!autenticado) {
+      setErro(t('entrar.erroCredenciais'));
       return;
     }
 
     setErro('');
 
-    // Por enquanto não existe API ou banco.
-    // Depois podemos colocar o login real aqui.
-
+    await createSession(email);
     navigation.reset({
       index: 0,
       routes: [{ name: 'TreinoHub' }],
@@ -70,11 +79,11 @@ export default function Entrar({ navigation }) {
 
         {/* TÍTULO */}
         <Text style={styles.title}>
-          Bem-vindo de volta!
+          {t('entrar.titulo')}
         </Text>
 
         <Text style={styles.subtitle}>
-          Entre na sua conta do GymVance
+          {t('entrar.subtitulo')}
         </Text>
 
         {/* E-MAIL */}
@@ -88,7 +97,7 @@ export default function Entrar({ navigation }) {
 
           <TextInput
             style={styles.input}
-            placeholder="E-mail"
+            placeholder={t('cadastro.email')}
             placeholderTextColor={COLORS.muted}
             value={email}
             onChangeText={setEmail}
@@ -109,7 +118,7 @@ export default function Entrar({ navigation }) {
 
           <TextInput
             style={styles.input}
-            placeholder="Senha"
+            placeholder={t('cadastro.senha')}
             placeholderTextColor={COLORS.muted}
             value={senha}
             onChangeText={setSenha}
@@ -133,13 +142,7 @@ export default function Entrar({ navigation }) {
         </View>
 
         {/* ESQUECI A SENHA */}
-        <TouchableOpacity
-          style={styles.forgotContainer}
-        >
-          <Text style={styles.forgotText}>
-            Esqueci minha senha
-          </Text>
-        </TouchableOpacity>
+        {/* Removido: não há backend para recuperação de senha. */}
 
         {/* ERRO */}
         {erro !== '' && (
@@ -154,84 +157,21 @@ export default function Entrar({ navigation }) {
           onPress={fazerLogin}
         >
           <Text style={styles.buttonText}>
-            Entrar
-          </Text>
-        </TouchableOpacity>
-
-        {/* DIVISOR */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-
-          <Text style={styles.dividerText}>
-            ou
-          </Text>
-
-          <View style={styles.divider} />
-        </View>
-
-        {/* GOOGLE */}
-        <TouchableOpacity style={styles.socialButton}>
-          <Ionicons
-            name="logo-google"
-            size={22}
-            color={COLORS.text}
-          />
-
-          <Text style={styles.socialText}>
-            Continuar com Google
-          </Text>
-        </TouchableOpacity>
-
-        {/* FACEBOOK */}
-        <TouchableOpacity style={styles.socialButton}>
-          <Ionicons
-            name="logo-facebook"
-            size={22}
-            color={COLORS.text}
-          />
-
-          <Text style={styles.socialText}>
-            Continuar com Facebook
-          </Text>
-        </TouchableOpacity>
-
-        {/* APPLE */}
-        <TouchableOpacity style={styles.socialButton}>
-          <Ionicons
-            name="logo-apple"
-            size={22}
-            color={COLORS.text}
-          />
-
-          <Text style={styles.socialText}>
-            Continuar com Apple
-          </Text>
-        </TouchableOpacity>
-
-        {/* TELEFONE */}
-        <TouchableOpacity style={styles.socialButton}>
-          <Ionicons
-            name="call-outline"
-            size={22}
-            color={COLORS.text}
-          />
-
-          <Text style={styles.socialText}>
-            Continuar com telefone
+            {t('comum.entrar')}
           </Text>
         </TouchableOpacity>
 
         {/* CADASTRO */}
         <View style={styles.registerContainer}>
           <Text style={styles.registerText}>
-            Ainda não tem uma conta?
+            {t('entrar.aindaNaoTemConta')}
           </Text>
 
           <TouchableOpacity
             onPress={() => navigation.navigate('Cadastro')}
           >
             <Text style={styles.registerLink}>
-              Criar conta
+              {t('comum.criarConta')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -299,17 +239,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  forgotContainer: {
-    width: '100%',
-    alignItems: 'flex-end',
-    marginBottom: 15,
-  },
-
-  forgotText: {
-    color: COLORS.green,
-    fontSize: 14,
-  },
-
   error: {
     width: '100%',
     color: COLORS.error,
@@ -332,45 +261,6 @@ const styles = StyleSheet.create({
     color: '#121212',
     fontSize: 17,
     fontWeight: '700',
-  },
-
-  dividerContainer: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 25,
-  },
-
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.border,
-  },
-
-  dividerText: {
-    color: COLORS.muted,
-    marginHorizontal: 12,
-    fontSize: 14,
-  },
-
-  socialButton: {
-    width: '100%',
-    height: 52,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-
-  socialText: {
-    color: COLORS.text,
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 12,
   },
 
   registerContainer: {

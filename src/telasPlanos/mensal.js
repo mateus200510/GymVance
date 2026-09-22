@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,21 +11,54 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
-import { saveSelectedPlan } from '../services/storage';
+import { saveSelectedPlan, getSelectedPlan } from '../services/storage';
+import { useIdioma } from '../services/idioma';
+
+// Preços fixos (identidade do produto). A formatação segue o idioma selecionado.
+const VALORES = {
+  mensal: 13.5,
+  anual: 58.32,
+  anualAntigo: 97.2,
+  eterno: 279.9,
+};
+
+function formatarMoeda(valor, idioma) {
+  const fixado = Number(valor).toFixed(2);
+  const comSeparador = idioma === 'pt' ? fixado.replace('.', ',') : fixado;
+  return `R$ ${comSeparador}`;
+}
 
 export default function Mensal({ navigation }) {
+  const { t, idioma } = useIdioma();
   const [planoSelecionado, setPlanoSelecionado] = useState('mensal');
+
+  useEffect(() => {
+    let ativo = true;
+
+    const carregarPlano = async () => {
+      const plano = await getSelectedPlan();
+      if (ativo && plano) {
+        setPlanoSelecionado(plano);
+      }
+    };
+
+    carregarPlano();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const handleAssinar = async () => {
     try {
       await saveSelectedPlan(planoSelecionado);
       Alert.alert(
-        'Plano PRO ativado',
-        `Seu plano ${planoSelecionado} foi selecionado com sucesso.`,
+        t('mensal.ativadoTitulo'),
+        t('mensal.ativadoMsg', { plano: t(`mensal.${planoSelecionado}`) }),
         [{ text: 'OK', onPress: () => navigation.navigate('TreinoHub') }]
       );
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível ativar o plano no momento.');
+      Alert.alert(t('comum.erro'), t('mensal.erroAtivar'));
     }
   };
 
@@ -50,25 +83,25 @@ export default function Mensal({ navigation }) {
         {/* Cards de planos */}
         <View style={styles.planosRow}>
           <PlanoCard
-            titulo="Mensal"
-            preco="R$ 13,50"
-            legenda="Cobrado mensalmente"
+            titulo={t('mensal.mensal')}
+            preco={formatarMoeda(VALORES.mensal, idioma)}
+            legenda={t('mensal.cobradoMensalmente')}
             selecionado={planoSelecionado === 'mensal'}
             onPress={() => setPlanoSelecionado('mensal')}
           />
           <PlanoCard
-            titulo="Anual"
-            preco="R$ 58,32"
-            precoAntigo="R$ 97,20"
+            titulo={t('mensal.anual')}
+            preco={formatarMoeda(VALORES.anual, idioma)}
+            precoAntigo={formatarMoeda(VALORES.anualAntigo, idioma)}
             desconto="-40%"
-            legenda="Cobrado Anualmente"
+            legenda={t('mensal.cobradoAnualmente')}
             selecionado={planoSelecionado === 'anual'}
             onPress={() => setPlanoSelecionado('anual')}
           />
           <PlanoCard
-            titulo="Eterno"
-            preco="R$ 279,90"
-            legenda="Compra única"
+            titulo={t('mensal.eterno')}
+            preco={formatarMoeda(VALORES.eterno, idioma)}
+            legenda={t('mensal.compraUnica')}
             selecionado={planoSelecionado === 'eterno'}
             onPress={() => setPlanoSelecionado('eterno')}
           />
@@ -78,33 +111,33 @@ export default function Mensal({ navigation }) {
         <View style={styles.beneficios}>
           <BeneficioItem
             icone="infinite-outline"
-            titulo="Rotinas ilimitadas"
-            descricao="Crie a rotina que quiser"
+            titulo={t('mensal.benef1Titulo')}
+            descricao={t('mensal.benef1Desc')}
           />
           <BeneficioItem
             icone="sparkles-outline"
-            titulo="10 tokens de IA todos os dias"
-            descricao="Monte treinos com ajuda da inteligência artificial"
+            titulo={t('mensal.benef2Titulo')}
+            descricao={t('mensal.benef2Desc')}
           />
           <BeneficioItem
             icone="stats-chart-outline"
-            titulo="Estatísticas avançadas"
-            descricao="Acompanhe sua evolução em detalhes"
+            titulo={t('mensal.benef3Titulo')}
+            descricao={t('mensal.benef3Desc')}
           />
           <BeneficioItem
             icone="heart-outline"
-            titulo="Apoie nossa equipe"
-            descricao="Ajude o GymVance a continuar evoluindo"
+            titulo={t('mensal.benef4Titulo')}
+            descricao={t('mensal.benef4Desc')}
           />
         </View>
 
         {/* Botão Assinar */}
         <TouchableOpacity style={styles.botaoAssinar} onPress={handleAssinar}>
-          <Text style={styles.botaoAssinarTexto}>Assinar</Text>
+          <Text style={styles.botaoAssinarTexto}>{t('mensal.assinar')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.agoraNao}>Agora não</Text>
+          <Text style={styles.agoraNao}>{t('mensal.agoraNao')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

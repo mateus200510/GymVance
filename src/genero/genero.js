@@ -11,9 +11,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getUserProfile, saveUserProfile, formatarDataNascimento, normalizarDataNascimento } from '../services/storage';
+import { getUserProfile, saveUserProfile, setOnboardingComplete, formatarDataNascimento, normalizarDataNascimento } from '../services/storage';
+import { useIdioma } from '../services/idioma';
 
-const GENEROS = ['Homem', 'Mulher'];
+// Valores armazenados no perfil como dados (não traduzidos para preservar os dados).
+// O rótulo exibido vem do idioma selecionado; o valor salvo é sempre o `valor`.
+const GENEROS = [
+  { valor: 'Homem', chave: 'genero.homem' },
+  { valor: 'Mulher', chave: 'genero.mulher' },
+];
 
 function formatarDataInput(texto) {
   const apenasNumeros = texto.replace(/\D/g, '').slice(0, 8);
@@ -47,6 +53,7 @@ function validarDataNascimento(value) {
 }
 
 export default function Genero({ navigation }) {
+  const { t } = useIdioma();
   const [nome, setNome] = useState('');
   const [generoSelecionado, setGeneroSelecionado] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
@@ -66,18 +73,18 @@ export default function Genero({ navigation }) {
 
   const handleAvancar = async () => {
     if (!nome.trim()) {
-      Alert.alert('Nome obrigatório', 'Informe seu nome para continuar.');
+      Alert.alert(t('genero.erroNome'), t('genero.erroNomeMsg'));
       return;
     }
 
     const dataIso = validarDataNascimento(dataNascimento);
     if (!dataIso) {
-      Alert.alert('Data inválida', 'Informe uma data de nascimento válida no formato DD/MM/AAAA.');
+      Alert.alert(t('genero.erroData'), t('genero.erroDataMsg'));
       return;
     }
 
     if (!generoSelecionado) {
-      Alert.alert('Gênero obrigatório', 'Selecione seu gênero para continuar.');
+      Alert.alert(t('genero.erroGenero'), t('genero.erroGeneroMsg'));
       return;
     }
 
@@ -87,9 +94,10 @@ export default function Genero({ navigation }) {
         genero: generoSelecionado,
         dataNascimento: dataIso,
       });
+      await setOnboardingComplete(true);
     } catch (error) {
       console.warn('Erro ao salvar perfil:', error);
-      Alert.alert('Erro', 'Não foi possível salvar seus dados. Tente novamente.');
+      Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
       return;
     }
 
@@ -107,42 +115,42 @@ export default function Genero({ navigation }) {
         </TouchableOpacity>
 
         <View style={styles.formCard}>
-          <Text style={styles.stepText}>Etapa 4 de 4</Text>
-          <Text style={styles.title}>Crie seu perfil</Text>
+          <Text style={styles.stepText}>{t('genero.etapa')}</Text>
+          <Text style={styles.title}>{t('genero.titulo')}</Text>
 
-          <Text style={styles.label}>Nome</Text>
+          <Text style={styles.label}>{t('genero.nome')}</Text>
           <TextInput
             style={styles.input}
             value={nome}
             onChangeText={setNome}
-            placeholder="Digite seu nome"
+            placeholder={t('genero.placeholderNome')}
             placeholderTextColor="#7A7A7A"
             autoCapitalize="words"
           />
 
-          <Text style={styles.sectionLabel}>Gênero</Text>
-          <Text style={styles.helper}>Usamos o gênero para adaptar o volume de treino, gasto calórico e dieta.</Text>
+          <Text style={styles.sectionLabel}>{t('genero.genero')}</Text>
+          <Text style={styles.helper}>{t('genero.helperGenero')}</Text>
 
           <View style={styles.generoRow}>
             {GENEROS.map((item) => {
-              const ativo = generoSelecionado === item;
+              const ativo = generoSelecionado === item.valor;
               return (
                 <TouchableOpacity
-                  key={item}
+                  key={item.valor}
                   style={[styles.generoOption, ativo && styles.generoOptionAtivo]}
-                  onPress={() => setGeneroSelecionado(item)}
+                  onPress={() => setGeneroSelecionado(item.valor)}
                 >
                   <View style={[styles.radio, ativo && styles.radioAtivo]}>
                     {ativo && <View style={styles.radioInner} />}
                   </View>
-                  <Text style={styles.generoTexto}>{item}</Text>
+                  <Text style={styles.generoTexto}>{t(item.chave)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <Text style={styles.sectionLabel}>Data de nascimento</Text>
-          <Text style={styles.helper}>Informe a data completa do seu nascimento para personalizar sua evolução.</Text>
+          <Text style={styles.sectionLabel}>{t('genero.dataNascimento')}</Text>
+          <Text style={styles.helper}>{t('genero.helperData')}</Text>
 
           <TextInput
             style={styles.input}
@@ -150,12 +158,12 @@ export default function Genero({ navigation }) {
             onChangeText={(text) => setDataNascimento(formatarDataInput(text))}
             keyboardType="number-pad"
             maxLength={10}
-            placeholder="DD/MM/AAAA"
+            placeholder={t('genero.placeholderData')}
             placeholderTextColor="#7A7A7A"
           />
 
           <TouchableOpacity style={styles.button} onPress={handleAvancar}>
-            <Text style={styles.buttonText}>Avançar</Text>
+            <Text style={styles.buttonText}>{t('comum.avancar')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

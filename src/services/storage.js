@@ -5,6 +5,10 @@ const HISTORY_KEY = 'gymvance_historico';
 const PLAN_KEY = 'gymvance_plano_ativo';
 const USER_PROFILE_KEY = 'gymvance_usuario';
 const PROGRESS_PHOTOS_KEY = 'gymvance_fotos_progresso';
+const LANGUAGE_KEY = 'gymvance_idioma';
+const SESSION_KEY = 'gymvance_sessao';
+const ONBOARDING_KEY = 'gymvance_onboarding';
+const CONTAS_KEY = 'gymvance_contas';
 
 function safeJsonParse(raw, fallback) {
   if (!raw) {
@@ -95,7 +99,8 @@ async function ensureFileSystemUri(uri) {
 export async function getWorkoutHistory() {
   try {
     const raw = await AsyncStorage.getItem(HISTORY_KEY);
-    return safeJsonParse(raw, []);
+    const parsed = safeJsonParse(raw, []);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
     console.warn('Erro ao recuperar histórico:', error);
     return [];
@@ -129,6 +134,148 @@ export async function getSelectedPlan() {
   } catch (error) {
     console.warn('Erro ao ler plano:', error);
     return null;
+  }
+}
+
+export async function getLanguage() {
+  try {
+    const valor = await AsyncStorage.getItem(LANGUAGE_KEY);
+    return valor === 'en' ? 'en' : 'pt';
+  } catch (error) {
+    console.warn('Erro ao ler idioma:', error);
+    return 'pt';
+  }
+}
+
+export async function setLanguage(idioma) {
+  try {
+    await AsyncStorage.setItem(LANGUAGE_KEY, idioma === 'en' ? 'en' : 'pt');
+  } catch (error) {
+    console.warn('Erro ao salvar idioma:', error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Autenticação local (sem backend).
+// A separação é proposital: sessão, onboarding e perfil são estados distintos.
+// ---------------------------------------------------------------------------
+
+function normalizarEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+export async function saveAccount({ email, senha }) {
+  const chave = normalizarEmail(email);
+  if (!chave || !senha) {
+    throw new Error('E-mail e senha são obrigatórios.');
+  }
+
+  const contas = await getContas();
+  contas[chave] = { senha };
+  await AsyncStorage.setItem(CONTAS_KEY, JSON.stringify(contas));
+  return contas;
+}
+
+export async function getContas() {
+  try {
+    const raw = await AsyncStorage.getItem(CONTAS_KEY);
+    const parsed = safeJsonParse(raw, {});
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    console.warn('Erro ao ler contas locais:', error);
+    return {};
+  }
+}
+
+export async function accountExists(email) {
+  const contas = await getContas();
+  return Boolean(contas[normalizarEmail(email)]);
+}
+
+export async function authenticateUser(email, senha) {
+  const contas = await getContas();
+  const conta = contas[normalizarEmail(email)];
+  return Boolean(conta && conta.senha === senha);
+}
+
+export async function createSession(email) {
+  const sessao = {
+    email: String(email || '').trim(),
+    criadaEm: new Date().toISOString(),
+  };
+  await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(sessao));
+  return sessao;
+}
+
+export async function getSession() {
+  try {
+    const raw = await AsyncStorage.getItem(SESSION_KEY);
+    const parsed = safeJsonParse(raw, null);
+    return parsed && typeof parsed === 'object' && typeof parsed.email === 'string' ? parsed : null;
+  } catch (error) {
+    console.warn('Erro ao ler sessão:', error);
+    return null;
+  }
+}
+
+export async function removeSession() {
+  try {
+    await AsyncStorage.removeItem(SESSION_KEY);
+  } catch (error) {
+    console.warn('Erro ao remover sessão:', error);
+  }
+}
+
+// Logout preserva perfil e dados do usuário; remove apenas a autenticação.
+export async function logout() {
+  await removeSession();
+}
+
+export async function setOnboardingComplete(valor) {
+  try {
+    await AsyncStorage.setItem(ONBOARDING_KEY, JSON.stringify(Boolean(valor)));
+  } catch (error) {
+    console.warn('Erro ao salvar onboarding:', error);
+  }
+}
+
+export async function getOnboardingComplete() {
+  try {
+    const raw = await AsyncStorage.getItem(ONBOARDING_KEY);
+    return safeJsonParse(raw, false) === true;
+  } catch (error) {
+    console.warn('Erro ao ler onboarding:', error);
+    return false;
+  }
+}
+
+// Migração conservadora para usuários anteriores às chaves de sessão/onboarding.
+// - Detecta: gymvance_usuario com nome, sem gymvance_sessao e sem gymvance_onboarding.
+// - Preserva: perfil, histórico, plano, fotos e idioma (nada é apagado).
+// - Cria: sessão e flag de onboarding, para que o usuário legado continue com acesso.
+export async function migrarUsuarioLegado() {
+  try {
+    const sessao = await getSession();
+    if (sessao) {
+      return { sessaoCriada: false, onboardingCriado: false, migrado: false };
+    }
+
+    const perfil = await getUserProfile();
+    const nome = String(perfil?.nome || '').trim();
+    if (!nome) {
+      return { sessaoCriada: false, onboardingCriado: false, migrado: false };
+    }
+
+    const email = String(perfil?.email || '').trim()
+      || `legado.${nome.replace(/\s+/g, '.').toLowerCase()}`;
+
+    await createSession(email);
+    await setOnboardingComplete(true);
+
+    return { sessaoCriada: true, onboardingCriado: true, migrado: true };
+  } catch (error) {
+    console.warn('Erro ao migrar usuário legado:', error);
+    return { sessaoCriada: false, onboardingCriado: false, migrado: false };
   }
 }
 
@@ -181,10 +328,33 @@ export async function getUserProfile() {
   }
 }
 
+async function apagarArquivosFotos(fotos) {
+  if (!FileSystem.documentDirectory || !Array.isArray(fotos)) {
+    return;
+  }
+
+  for (const foto of fotos) {
+    const uri = foto?.uri;
+    if (!uri || !uri.startsWith('file://')) {
+      continue;
+    }
+
+    try {
+      const info = await FileSystem.getInfoAsync(uri);
+      if (info.exists) {
+        await FileSystem.deleteAsync(uri, { idempotent: true });
+      }
+    } catch (error) {
+      console.warn('Erro ao excluir foto de progresso:', error);
+    }
+  }
+}
+
 export async function getProgressPhotos() {
   try {
     const raw = await AsyncStorage.getItem(PROGRESS_PHOTOS_KEY);
-    return safeJsonParse(raw, []);
+    const parsed = safeJsonParse(raw, []);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
     console.warn('Erro ao recuperar fotos de progresso:', error);
     return [];
@@ -202,23 +372,7 @@ export async function saveProgressPhoto(uri, metadata = {}) {
       ...metadata,
     }, ...current].slice(0, 30);
 
-    await AsyncStorage.setItem(PROGRESS_PHOTOS_KEY, JSON.stringify(next));
-    return next;
-  } catch (error) {
-    console.warn('Erro ao salvar foto de progresso:', error);
-    throw error;
-  }
-}
-
-export async function addProgressPhoto(photo) {
-  try {
-    const current = await getProgressPhotos();
-    const next = [{
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      data: new Date().toISOString(),
-      ...photo,
-    }, ...current].slice(0, 30);
-
+    await apagarArquivosFotos(current.filter((f) => !next.some((n) => n.uri === f.uri)));
     await AsyncStorage.setItem(PROGRESS_PHOTOS_KEY, JSON.stringify(next));
     return next;
   } catch (error) {
@@ -234,16 +388,6 @@ export async function setProgressPhotos(photos) {
     return lista;
   } catch (error) {
     console.warn('Erro ao atualizar fotos de progresso:', error);
-    return [];
-  }
-}
-
-export async function clearProgressPhotos() {
-  try {
-    await AsyncStorage.removeItem(PROGRESS_PHOTOS_KEY);
-    return [];
-  } catch (error) {
-    console.warn('Erro ao limpar fotos de progresso:', error);
     return [];
   }
 }
