@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 import {
   View,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Image,
   ScrollView,
+  Alert,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -161,6 +162,119 @@ export default function Entrar({ navigation }) {
           </Text>
         </TouchableOpacity>
 
+        {/* DIVISOR */}
+        <View style={styles.dividerContainer}>
+          <View style={styles.divider} />
+          <Text style={styles.dividerText}>{t('auth.ouContinueCom')}</Text>
+          <View style={styles.divider} />
+        </View>
+
+        {/* PROVEDORES DE LOGIN */}
+        <View style={styles.providersRow}>
+          {/* Google */}
+          <TouchableOpacity
+            style={styles.providerButton}
+            onPress={() =>
+              Alert.alert(
+                t('auth.googleIndisponivel'),
+                t('auth.googleMsg')
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.google')}
+          >
+            <Image
+              source={require('../../assets/Google.png')}
+              style={styles.providerIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+
+          {/* Facebook */}
+          <TouchableOpacity
+            style={styles.providerButton}
+            onPress={() =>
+              Alert.alert(
+                t('auth.facebookIndisponivel'),
+                t('auth.facebookMsg')
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.facebook')}
+          >
+            <Image
+              source={require('../../assets/Facebook.png')}
+              style={styles.providerIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+
+          {/* Apple */}
+          <TouchableOpacity
+            style={styles.providerButton}
+            onPress={() =>
+              Alert.alert(
+                t('auth.appleIndisponivel'),
+                t('auth.appleMsg')
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.apple')}
+          >
+            <Image
+              source={require('../../assets/Apple.png')}
+              style={styles.providerIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* E-MAIL (real) / TELÉFONE (não configurado) */}
+        <View style={styles.providersRow}>
+          {/* E-mail: forma local real desta tela. */}
+          <TouchableOpacity
+            style={styles.providerButton}
+            onPress={() => {
+              Alert.alert(
+                t('auth.email'),
+                t('auth.emailMsg')
+              );
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.email')}
+          >
+            <Ionicons
+              name="mail-outline"
+              size={26}
+              color={COLORS.text}
+            />
+          </TouchableOpacity>
+
+          {/* Telefone: honesto, sem OTP/backend. */}
+          <TouchableOpacity
+            style={styles.providerButton}
+            onPress={() =>
+              Alert.alert(
+                t('auth.telefoneIndisponivel'),
+                t('auth.telefoneMsg')
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.telefone')}
+          >
+            <Ionicons
+              name="call-outline"
+              size={26}
+              color={COLORS.text}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* LEGENDA DE TRANSPARÊNCIA */}
+        <Text style={styles.providerNote}>
+          {t('auth.notaProvedores')}
+        </Text>
+
         {/* CADASTRO */}
         <View style={styles.registerContainer}>
           <Text style={styles.registerText}>
@@ -168,7 +282,7 @@ export default function Entrar({ navigation }) {
           </Text>
 
           <TouchableOpacity
-            onPress={() => navigation.navigate('Cadastro')}
+            onPress={() => navigation.replace('Cadastro')}
           >
             <Text style={styles.registerLink}>
               {t('comum.criarConta')}
@@ -279,5 +393,56 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     marginLeft: 5,
+  },
+
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    width: '100%',
+  },
+
+  divider: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: COLORS.border,
+  },
+
+  dividerText: {
+    color: COLORS.muted,
+    fontSize: 12,
+    marginHorizontal: 10,
+  },
+
+  providersRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 18,
+    marginBottom: 14,
+  },
+
+  providerButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  providerIcon: {
+    width: 28,
+    height: 28,
+  },
+
+  providerNote: {
+    color: COLORS.muted,
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 16,
+    marginTop: 8,
+    paddingHorizontal: 6,
   },
 });

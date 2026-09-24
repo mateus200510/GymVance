@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 
 import BottomNavBar from '../components/BottomNavBar';
-import { saveWorkoutHistory } from '../services/storage';
+import { saveWorkoutHistory, nomeExercicio, getActiveSession, saveActiveSession, clearActiveSession } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
 const COLORS = {
@@ -60,29 +60,186 @@ function rotuloDaSerie(series, serie) {
   return infoTipo(tipoDe(serie)).sigla;
 }
 
+function tempoParaMs(tempo) {
+  if (typeof tempo !== 'string' || !tempo.includes(':')) {
+    return 0;
+  }
+  const partes = tempo.split(':').map(Number);
+  if (partes.length !== 3 || partes.some((p) => Number.isNaN(p))) {
+    return 0;
+  }
+  return partes[0] * 3600000 + partes[1] * 60000 + partes[2] * 1000;
+}
+
+function msParaTempo(total) {
+  const segundos = Math.floor(total / 1000);
+  const horas = String(Math.floor(segundos / 3600)).padStart(2, '0');
+  const minutos = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
+  const secs = String(segundos % 60).padStart(2, '0');
+  return `${horas}:${minutos}:${secs}`;
+}
+
 export default function SessaoAtiva({ navigation, route }) {
-  const { t } = useIdioma();
+  const { t, idioma } = useIdioma();
   const [series, setSeries] = useState([]);
   const [tempo, setTempo] = useState('00:00:00');
   const [serieEditandoId, setSerieEditandoId] = useState(null);
+  const [tituloSessao, setTituloSessao] = useState('');
+  const [carregado, setCarregado] = useState(false);
+  const [mostrarRetomar, setMostrarRetomar] = useState(false);
+  const [sessaoSalva, setSessaoSalva] = useState(null);
   const isFocused = useIsFocused();
-  const tituloSessao = (route?.params?.titulo || '').trim();
   const acumuladoMs = useRef(0);
   const inicioPeriodo = useRef(null);
-  const proximoId = useRef(1);
+  const proximoId = useRef(0);
+  const canPersistir = useRef(false);
+  const carregadoRef = useRef(false);
+  const seriesRef = useRef([]);
+  const tituloRef = useRef('');
+
+  useEffect(() => {
+    seriesRef.current = series;
+  }, [series]);
+
+  useEffect(() => {
+    tituloRef.current = tituloSessao;
+  }, [tituloSessao]);
+
+  useEffect(() => {
+    carregadoRef.current = carregado;
+  }, [carregado]);
 
   const serieEditando = series.find((s) => s.id === serieEditandoId) || null;
 
+  const persistirSessao = async () => {
+    if (!carregadoRef.current || !canPersistir.current) {
+      return;
+    }
+    const decorrido = inicioPeriodo.current ? Date.now() - inicioPeriodo.current : 0;
+    try {
+      await saveActiveSession({
+        titulo: tituloRef.current,
+        series: seriesRef.current,
+        tempo: msParaTempo(acumuladoMs.current + decorrido),
+        acumuladoMs: acumuladoMs.current,
+        inicioPeriodo: inicioPeriodo.current,
+        proximoId: proximoId.current,
+      });
+    } catch (error) {
+      console.warn('Erro ao salvar sessão em andamento:', error);
+    }
+  };
+
+  const aumentarIds = (lista) => {
+    let maxId = -1;
+    for (const s of lista) {
+      if (typeof s.id === 'number' && s.id > maxId) {
+        maxId = s.id;
+      }
+    }
+    proximoId.current = maxId + 1;
+  };
+
   useEffect(() => {
+    let ativo = true;
+
+    (async () => {
+      const temParams =
+        (route?.params?.exercicios || []).length > 0 || (route?.params?.titulo || '').trim() !== '';
+
+      if (temParams) {
+        await clearActiveSession();
+        const seriesIniciais = [];
+        let idCounter = 0;
+        (route.params.exercicios || []).forEach((ex, exIdx) => {
+          (ex.series || []).forEach((s) => {
+            seriesIniciais.push({
+              ...s,
+              id: idCounter++,
+              exercicioNome: nomeExercicio(ex, idioma),
+              exercicioIdx: exIdx,
+            });
+          });
+        });
+        if (!ativo) return;
+        setSeries(seriesIniciais);
+        proximoId.current = idCounter;
+        if (route?.params?.titulo) {
+          setTituloSessao(String(route.params.titulo));
+        }
+        acumuladoMs.current = 0;
+        inicioPeriodo.current = null;
+        setTempo('00:00:00');
+        canPersistir.current = true;
+        setCarregado(true);
+        return;
+      }
+
+      const sessao = await getActiveSession();
+
+      if (!ativo) return;
+
+      if (sessao && Array.isArray(sessao.series) && sessao.series.length > 0) {
+        setSessaoSalva(sessao);
+        setMostrarRetomar(true);
+        return;
+      }
+
+      acumuladoMs.current = 0;
+      setTempo('00:00:00');
+      canPersistir.current = true;
+      setCarregado(true);
+    })();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const restaurarSessao = () => {
+    if (!sessaoSalva) {
+      return;
+    }
+    const lista = Array.isArray(sessaoSalva.series) ? sessaoSalva.series : [];
+    setSeries(lista);
+    aumentarIds(lista);
+    if (sessaoSalva.titulo) {
+      setTituloSessao(String(sessaoSalva.titulo));
+    }
+    acumuladoMs.current = sessaoSalva.acumuladoMs || tempoParaMs(sessaoSalva.tempo);
+    inicioPeriodo.current = null;
+    setTempo(msParaTempo(acumuladoMs.current));
+    canPersistir.current = true;
+    setCarregado(true);
+    setMostrarRetomar(false);
+  };
+
+  const comecarNovo = async () => {
+    canPersistir.current = false;
+    await clearActiveSession();
+    setSeries([]);
+    setTituloSessao('');
+    proximoId.current = 0;
+    acumuladoMs.current = 0;
+    inicioPeriodo.current = null;
+    setTempo('00:00:00');
+    setSessaoSalva(null);
+    setMostrarRetomar(false);
+    canPersistir.current = true;
+    setCarregado(true);
+  };
+
+  useEffect(() => {
+    if (!carregado) {
+      return undefined;
+    }
     let timer = null;
+    let autosave = null;
+    let mounted = true;
 
     const atualizar = () => {
       const total = acumuladoMs.current + (inicioPeriodo.current ? Date.now() - inicioPeriodo.current : 0);
-      const segundos = Math.floor(total / 1000);
-      const horas = String(Math.floor(segundos / 3600)).padStart(2, '0');
-      const minutos = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
-      const secs = String(segundos % 60).padStart(2, '0');
-      setTempo(`${horas}:${minutos}:${secs}`);
+      setTempo(msParaTempo(total));
     };
 
     const parar = () => {
@@ -90,17 +247,23 @@ export default function SessaoAtiva({ navigation, route }) {
         clearInterval(timer);
         timer = null;
       }
+      if (autosave) {
+        clearInterval(autosave);
+        autosave = null;
+      }
       if (inicioPeriodo.current) {
         acumuladoMs.current += Date.now() - inicioPeriodo.current;
         inicioPeriodo.current = null;
       }
       atualizar();
+      persistirSessao();
     };
 
     const iniciar = () => {
       inicioPeriodo.current = Date.now();
       atualizar();
       timer = setInterval(atualizar, 1000);
+      autosave = setInterval(persistirSessao, 5000);
     };
 
     const sub = AppState.addEventListener('change', (estado) => {
@@ -116,10 +279,11 @@ export default function SessaoAtiva({ navigation, route }) {
     }
 
     return () => {
+      mounted = false;
       sub.remove();
       parar();
     };
-  }, [isFocused]);
+  }, [isFocused, carregado]);
 
   const toggleConcluido = (id) => {
     setSeries((prev) =>
@@ -176,6 +340,8 @@ export default function SessaoAtiva({ navigation, route }) {
         exercicios: series,
       };
 
+      canPersistir.current = false;
+      await clearActiveSession();
       await saveWorkoutHistory(treino);
       Alert.alert(t('sessaoAtiva.treinoConcluido'), t('sessaoAtiva.salvoHistorico'));
       navigation?.replace('TreinoHub');
@@ -191,13 +357,23 @@ const handleDescartarTreino = () => {
       t('sessaoAtiva.confirmarDescartar'),
       [
         { text: t('sessaoAtiva.cancelar'), style: 'cancel' },
-        { text: t('comum.descartar'), style: 'destructive', onPress: () => navigation?.goBack() },
+        {
+          text: t('comum.descartar'),
+          style: 'destructive',
+          onPress: async () => {
+            canPersistir.current = false;
+            await clearActiveSession();
+            navigation?.goBack();
+          },
+        },
       ]
     );
   };
 
   const handleVoltar = () => {
     if (series.length === 0) {
+      canPersistir.current = false;
+      clearActiveSession();
       navigation?.goBack();
       return;
     }
@@ -243,14 +419,17 @@ const handleDescartarTreino = () => {
 
           <View style={styles.tabelaHeader}>
             <Text style={[styles.colLabel, { flex: 0.6 }]}>{t('sessaoAtiva.colSerie')}</Text>
-            <Text style={[styles.colLabel, { flex: 1 }]}>Kg</Text>
-            <Text style={[styles.colLabel, { flex: 1 }]}>Reps</Text>
+            <Text style={[styles.colLabel, { flex: 1 }]}>{t('sessaoAtiva.colKg')}</Text>
+            <Text style={[styles.colLabel, { flex: 1 }]}>{t('sessaoAtiva.colReps')}</Text>
             <Text style={[styles.colLabel, { flex: 1 }]}>{t('sessaoAtiva.colNotas')}</Text>
             <View style={{ width: 60 }} />
           </View>
 
           {series.map((s) => (
             <View key={s.id}>
+              {s.exercicioNome && (
+                <Text style={styles.exercicioNomeLinha}>{s.exercicioNome}</Text>
+              )}
               <View style={styles.linhaSerie}>
                 <TouchableOpacity
               style={[styles.serieBadge, { flex: 0.6 }]}
@@ -372,6 +551,29 @@ const handleDescartarTreino = () => {
         </TouchableOpacity>
       </Modal>
 
+      <Modal
+        visible={mostrarRetomar}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { /* decisão obrigatória via botões */ }}
+      >
+        <View style={styles.retomarFundo}>
+          <View style={styles.retomarCard}>
+            <Ionicons name="time-outline" size={32} color={COLORS.green} />
+            <Text style={styles.retomarTitulo}>{t('sessaoAtiva.retomarTitulo')}</Text>
+            <Text style={styles.retomarTexto}>{t('sessaoAtiva.retomarMsg')}</Text>
+
+            <TouchableOpacity style={styles.retomarBtnPrimario} onPress={restaurarSessao}>
+              <Text style={styles.retomarBtnPrimarioText}>{t('sessaoAtiva.continuarTreino')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.retomarBtnSecundario} onPress={comecarNovo}>
+              <Text style={styles.retomarBtnSecundarioText}>{t('sessaoAtiva.comecarNovo')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <BottomNavBar activeTab="treino" />
     </SafeAreaView>
   );
@@ -393,6 +595,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: COLORS.card, borderRadius: 16, padding: 14 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   exercicioNome: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
+  exercicioNomeLinha: { color: COLORS.green, fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 4 },
   tabelaHeader: { flexDirection: 'row', marginBottom: 6 },
   colLabel: { color: COLORS.muted, fontSize: 12 },
   linhaSerie: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
@@ -412,6 +615,14 @@ const styles = StyleSheet.create({
   rodapeAcoes: { gap: 10, marginBottom: 8 },
   btnDescartarTreino: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.card, paddingVertical: 12, borderRadius: 12 },
   modalFundo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
+  retomarFundo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  retomarCard: { backgroundColor: '#1A1A1A', borderRadius: 18, padding: 24, width: '100%', alignItems: 'center' },
+  retomarTitulo: { color: COLORS.text, fontSize: 18, fontWeight: '700', marginTop: 12 },
+  retomarTexto: { color: COLORS.muted, fontSize: 13, textAlign: 'center', marginTop: 8, marginBottom: 20, lineHeight: 19 },
+  retomarBtnPrimario: { backgroundColor: COLORS.green, borderRadius: 12, paddingVertical: 14, width: '100%', alignItems: 'center' },
+  retomarBtnPrimarioText: { color: '#000', fontWeight: '700' },
+  retomarBtnSecundario: { marginTop: 10, borderRadius: 12, paddingVertical: 12, width: '100%', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
+  retomarBtnSecundarioText: { color: COLORS.text, fontWeight: '600' },
   menuSerie: { backgroundColor: '#1A1A1A', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 28 },
   menuTitulo: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
   menuSubtitulo: { color: COLORS.muted, fontSize: 12, marginTop: 2, marginBottom: 12 },

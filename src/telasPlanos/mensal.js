@@ -55,7 +55,7 @@ export default function Mensal({ navigation }) {
       Alert.alert(
         t('mensal.ativadoTitulo'),
         t('mensal.ativadoMsg', { plano: t(`mensal.${planoSelecionado}`) }),
-        [{ text: 'OK', onPress: () => navigation.navigate('TreinoHub') }]
+        [{ text: 'OK', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'TreinoHub' }] }) }]
       );
     } catch (error) {
       Alert.alert(t('comum.erro'), t('mensal.erroAtivar'));
@@ -236,10 +236,7 @@ const styles = StyleSheet.create({
   },
   planoCardSelecionado: {
     borderColor: '#3DDC5C',
-    shadowColor: '#3DDC5C',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    boxShadow: '0 2px 6px rgba(61, 220, 92, 0.15)',
   },
   planoTitulo: {
     fontSize: 15,

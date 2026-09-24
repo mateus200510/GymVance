@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
@@ -114,7 +115,7 @@ export default function Batimento({ navigation }) {
       <View style={styles.cabecalho}>
         <View style={styles.perfil}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarIcone}>👤</Text>
+            <Feather name="user" size={20} color="#fff" />
           </View>
           <View>
             <Text style={styles.evolucaoTexto}>{t('comum.evolucaoDiaria')}</Text>
@@ -122,7 +123,7 @@ export default function Batimento({ navigation }) {
           </View>
         </View>
         <Text style={styles.logo}>
-          Gym<Text style={styles.logoVerde}>vance</Text>
+          Gym<Text style={styles.logoVerde}>Vance</Text>
         </Text>
       </View>
 
@@ -137,7 +138,7 @@ export default function Batimento({ navigation }) {
           >
             <Text style={[styles.bpmNumero, { fontSize: Math.min(circleSize * 0.28, 60) }]}>{bpmAtual === null ? '—' : bpmAtual}</Text>
             <View style={styles.bpmLinha}>
-              <Text style={styles.coracaoIcone}>♡</Text>
+              <Feather name="heart" size={18} color={VERDE} style={styles.coracaoIcone} />
               <Text style={styles.bpmLabel}>BPM</Text>
             </View>
           </TouchableOpacity>

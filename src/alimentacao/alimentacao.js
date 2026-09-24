@@ -13,20 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { getProgressPhotos, saveProgressPhoto } from '../services/storage';
+import { getProgressPhotos, saveProgressPhoto, deleteProgressPhoto } from '../services/storage';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
 import { useIdioma } from '../services/idioma';
-
-const DIAS_SEMANA = [];
-
-const REFEICOES = [];
-
-const MACROS = [];
-
-const KCAL_ATUAL = null;
-const KCAL_META = null;
+import { getKcalMeta, getKcalQueimadas } from '../services/metricas';
 
 function BarraProgresso({ percentual, cor = '#3DDC5C' }) {
   return (
@@ -36,9 +28,11 @@ function BarraProgresso({ percentual, cor = '#3DDC5C' }) {
   );
 }
 
-function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuario }) {
+function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuario, kcalAtual, kcalMeta, refeicoes = [] }) {
   const { t } = useIdioma();
-  const percentualKcal = KCAL_META ? Math.min(100, Math.round((KCAL_ATUAL / KCAL_META) * 100)) : null;
+  const percentualKcal = kcalAtual !== null && kcalMeta
+    ? Math.min(100, Math.round((kcalAtual / kcalMeta) * 100))
+    : null;
 
   return (
     <ScrollView
@@ -69,20 +63,6 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuar
         </View>
       ) : null}
 
-      {/* Seletor de dias */}
-      {DIAS_SEMANA.length > 0 && (
-        <View style={styles.diasRow}>
-          {DIAS_SEMANA.map((dia) => (
-            <View key={dia.label} style={styles.diaItem}>
-              <Text style={styles.diaLabel}>{dia.label}</Text>
-              <View style={styles.diaCirculo}>
-                <Text style={styles.diaNumero}>{dia.data}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-
       {/* Consumo diário */}
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
@@ -90,48 +70,37 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuar
           <Text style={styles.cardPercentual}>{percentualKcal === null ? '—' : `${percentualKcal}%`}</Text>
         </View>
         <Text style={styles.kcalTexto}>
-          {KCAL_ATUAL ?? '—'} <Text style={styles.kcalMeta}>/ {KCAL_META ?? '—'} kcal</Text>
+          {kcalAtual ?? '—'} <Text style={styles.kcalMeta}>/ {kcalMeta ?? '—'} kcal</Text>
         </Text>
         <BarraProgresso percentual={percentualKcal} />
+      </View>
 
-        {MACROS.length > 0 && (
-          <View style={styles.macrosRow}>
-            {MACROS.map((macro) => (
-              <View key={macro.label} style={styles.macroItem}>
-                <Text style={styles.macroLabel}>{macro.label}</Text>
-                <Text style={styles.macroValor}>
-                  {macro.atual}
-                  {macro.unidade}
-                  <Text style={styles.macroMeta}> /{macro.meta}{macro.unidade}</Text>
-                </Text>
-                <BarraProgresso percentual={(macro.atual / macro.meta) * 100} />
+      {/* Refeições de hoje (apenas quando houver registros; não há cadastro de
+          refeições neste build) */}
+      {refeicoes.length > 0 && (
+        <>
+          <View style={styles.secaoHeaderRow}>
+            <Text style={styles.secaoTitulo}>{t('alimentacao.refeicoesHoje')}</Text>
+          </View>
+
+          {refeicoes.map((refeicao) => (
+            <View key={refeicao.id} style={styles.refeicaoItem}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.refeicaoNome}>{refeicao.nome}</Text>
+                <Text style={styles.refeicaoDescricao}>{refeicao.descricao}</Text>
               </View>
-            ))}
-          </View>
-        )}
-      </View>
-
-      {/* Refeições de hoje */}
-      <View style={styles.secaoHeaderRow}>
-        <Text style={styles.secaoTitulo}>{t('alimentacao.refeicoesHoje')}</Text>
-      </View>
-
-      {REFEICOES.map((refeicao) => (
-        <View key={refeicao.id} style={styles.refeicaoItem}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.refeicaoNome}>{refeicao.nome}</Text>
-            <Text style={styles.refeicaoDescricao}>{refeicao.descricao}</Text>
-          </View>
-          <Text style={styles.refeicaoKcal}>{refeicao.kcal} kcal</Text>
-        </View>
-      ))}
+              <Text style={styles.refeicaoKcal}>{refeicao.kcal} kcal</Text>
+            </View>
+          ))}
+        </>
+      )}
 
       <View style={{ height: 90 }} />
     </ScrollView>
   );
 }
 
-function TelaGaleria({ onVoltar, fotos = [] }) {
+function TelaGaleria({ onVoltar, fotos = [], onExcluirFoto }) {
   const { t } = useIdioma();
   return (
     <View style={styles.container}>
@@ -140,10 +109,7 @@ function TelaGaleria({ onVoltar, fotos = [] }) {
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.galeriaTitulo}>{t('alimentacao.minhasFotos')}</Text>
-        <View style={styles.galeriaHeaderIcones}>
-          <Feather name="search" size={20} color="#fff" style={{ marginRight: 16 }} />
-          <Feather name="more-vertical" size={20} color="#fff" />
-        </View>
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.galeriaScrollContent}>
@@ -157,30 +123,18 @@ function TelaGaleria({ onVoltar, fotos = [] }) {
             {fotos.map((foto) => (
               <View key={foto.id} style={styles.galeriaFotoWrapper}>
                 <Image source={{ uri: foto.uri }} style={styles.galeriaFotoReal} resizeMode="cover" />
+                <TouchableOpacity
+                  style={styles.galeriaFotoExcluir}
+                  onPress={() => onExcluirFoto(foto)}
+                  accessibilityLabel={t('exercicios.excluir')}
+                >
+                  <Feather name="x" size={12} color="#fff" />
+                </TouchableOpacity>
               </View>
             ))}
           </View>
         )}
       </ScrollView>
-
-      <View style={styles.navBar}>
-        <View style={styles.navItem}>
-          <Feather name="camera" size={20} color="#3DDC5C" />
-          <Text style={[styles.navLabel, { color: '#3DDC5C' }]}>{t('alimentacao.abasFotos')}</Text>
-        </View>
-        <View style={styles.navItem}>
-          <Feather name="folder" size={20} color="#8E8E93" />
-          <Text style={styles.navLabel}>{t('alimentacao.abasAlbuns')}</Text>
-        </View>
-        <View style={styles.navItem}>
-          <Feather name="clock" size={20} color="#8E8E93" />
-          <Text style={styles.navLabel}>{t('alimentacao.abasHistorias')}</Text>
-        </View>
-        <View style={styles.navItem}>
-          <Feather name="more-horizontal" size={20} color="#8E8E93" />
-          <Text style={styles.navLabel}>{t('alimentacao.abasMais')}</Text>
-        </View>
-      </View>
     </View>
   );
 }
@@ -192,6 +146,8 @@ export default function Alimentacao({ navigation }) {
   const [cameraPermission, requestPermission] = useCameraPermissions();
   const [fotoCapturada, setFotoCapturada] = useState(null);
   const [fotosGaleria, setFotosGaleria] = useState([]);
+  const [kcalAtual, setKcalAtual] = useState(null);
+  const [kcalMeta, setKcalMeta] = useState(null);
   const cameraRef = useRef(null);
 
   const carregarGaleria = async () => {
@@ -205,6 +161,36 @@ export default function Alimentacao({ navigation }) {
   useEffect(() => {
     carregarGaleria();
   }, []);
+
+  useEffect(() => {
+    let ativo = true;
+
+    (async () => {
+      const [atual, meta] = await Promise.all([
+        getKcalQueimadas(),
+        getKcalMeta(),
+      ]);
+      if (ativo) {
+        setKcalAtual(atual);
+        setKcalMeta(meta);
+      }
+    })();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  const excluirFoto = async (foto) => {
+    try {
+      const restantes = await deleteProgressPhoto(foto.id);
+      setFotosGaleria(restantes);
+      setFotoCapturada(restantes[0]?.uri ?? null);
+    } catch (error) {
+      console.warn('Erro ao excluir foto:', error);
+      Alert.alert(t('comum.erro'), t('alimentacao.erroSalvarFoto'));
+    }
+  };
 
   const abrirGaleria = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -228,7 +214,7 @@ export default function Alimentacao({ navigation }) {
 
     let salvas;
 
-try {
+    try {
       salvas = await saveProgressPhoto(result.assets[0].uri, { origem: 'galeria' });
     } catch (error) {
       console.warn('Erro ao salvar foto:', error);
@@ -285,9 +271,11 @@ try {
           onAbrirCamera={abrirCamera}
           fotoCapturada={fotoCapturada}
           nomeUsuario={nomeUsuario}
+          kcalAtual={kcalAtual}
+          kcalMeta={kcalMeta}
         />
       ) : tela === 'galeria' ? (
-        <TelaGaleria fotos={fotosGaleria} onVoltar={() => setTela('dashboard')} />
+        <TelaGaleria fotos={fotosGaleria} onVoltar={() => setTela('dashboard')} onExcluirFoto={excluirFoto} />
       ) : (
         <View style={styles.cameraContainer}>
           <CameraView ref={cameraRef} style={styles.cameraView} facing="back" />
@@ -352,7 +340,10 @@ const styles = StyleSheet.create({
   galeriaTitulo: { color: '#fff', fontSize: 17, fontWeight: '700' },
   galeriaHeaderIcones: { flexDirection: 'row' },
   galeriaData: { color: '#8E8E93', fontSize: 13, marginBottom: 8, paddingHorizontal: 16 },
-  galeriaGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14 },
+  galeriaGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 14 },
+  galeriaFotoWrapper: { position: 'relative', width: '48%', aspectRatio: 0.9, marginBottom: 10, borderRadius: 10, overflow: 'hidden', backgroundColor: '#1C1C1E' },
+  galeriaFotoReal: { width: '100%', height: '100%' },
+  galeriaFotoExcluir: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center' },
   galeriaFotoVazia: { width: '23%', aspectRatio: 1, margin: '1%', backgroundColor: '#1C1C1E', borderRadius: 6, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed' },
   navBar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#1C1C1E', backgroundColor: '#000' },
   navItem: { alignItems: 'center' },

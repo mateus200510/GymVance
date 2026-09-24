@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 
 import BottomNavBar from '../components/BottomNavBar';
-import { getProgressPhotos, saveProgressPhoto, setProgressPhotos, getUserProfile } from '../services/storage';
+import { getProgressPhotos, saveProgressPhoto, setProgressPhotos, getUserProfile, formatarPeso } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
 // Medidas ficam vazias (sem valores/variações de exemplo) até o usuário registrar.
@@ -83,7 +83,7 @@ export default function Evolucao({ navigation }) {
   const { t } = useIdioma();
   const [fotos, setFotos] = useState([]);
   const [nomeUsuario, setNomeUsuario] = useState('');
-  const [pesoPerfil, setPesoPerfil] = useState(null);
+  const [medidasPerfil, setMedidasPerfil] = useState({});
   const [fotoVisualizada, setFotoVisualizada] = useState(null);
   const [adicionando, setAdicionando] = useState(false);
 
@@ -126,9 +126,13 @@ export default function Evolucao({ navigation }) {
       if (perfil?.nome) {
         setNomeUsuario(perfil.nome);
       }
-      if (perfil?.peso) {
-        setPesoPerfil(perfil.peso);
-      }
+      setMedidasPerfil({
+        peso: perfil?.peso,
+        cintura: perfil?.cintura,
+        braco: perfil?.braco,
+        peito: perfil?.peito,
+        pesoUnidade: perfil?.pesoUnidade || 'kg',
+      });
     };
     carregarPerfil();
   }, []);
@@ -230,7 +234,9 @@ export default function Evolucao({ navigation }) {
               <View key={medida.tipo} style={styles.medidaCard}>
                 <Text style={styles.medidaLabel}>{t(`perfil.medida.${medida.tipo}`)}</Text>
                 <Text style={styles.medidaValor}>
-                  {medida.tipo === 'peso' && pesoPerfil ? pesoPerfil : '--'} {medida.unidade}
+                  {medida.tipo === 'peso'
+                    ? formatarPeso(medidasPerfil.peso, medidasPerfil.pesoUnidade)
+                    : `${medidasPerfil[medida.tipo] ?? '--'} ${medida.unidade}`}
                 </Text>
               </View>
             ))}
@@ -259,7 +265,7 @@ export default function Evolucao({ navigation }) {
         </ScrollView>
       </View>
 
-      <BottomNavBar />
+      <BottomNavBar activeTab="treino" />
 
       <Modal
         visible={fotoVisualizada !== null}

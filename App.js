@@ -18,7 +18,15 @@ import {
 
 import Perfil from './src/Perfil/Perfil';
 import Evolucao from './src/Perfil/Evolucao';
+import EditarPerfil from './src/Perfil/EditarPerfil';
+import Calendario from './src/Perfil/Calendario';
 import Configuracoes from './src/configuracoes/configuracoes';
+import Idioma from './src/configuracoes/Idioma';
+import Unidade from './src/configuracoes/Unidade';
+import FAQ from './src/configuracoes/FAQ';
+import AvaliarApp from './src/configuracoes/AvaliarApp';
+import Conta from './src/configuracoes/Conta';
+import CatalogoExercicios from './src/configuracoes/CatalogoExercicios';
 import Cadastro from './src/telasCadastro/Cadastro';
 import Entrar from './src/telasLogin/Entrar';
 import PesoScreen from './src/conversoes/peso';
@@ -34,8 +42,9 @@ import Batimento from './src/Relogio/batimento';
 import Calorias from './src/Relogio/calorias';
 import Genero from './src/genero/genero';
 import Ranking from './src/ranking/ranking';
-import { getSession, getOnboardingComplete, migrarUsuarioLegado } from './src/services/storage';
+import { getSession, getOnboardingComplete, migrarUsuarioLegado, getUserProfile } from './src/services/storage';
 import { IdiomaProvider } from './src/services/idioma';
+import { UserProvider } from './src/services/UserContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -45,19 +54,43 @@ function SplashScreen({ navigation }) {
       let destino = 'Cadastro';
 
       try {
-        await migrarUsuarioLegado();
+        const migracao = await migrarUsuarioLegado();
         const sessao = await getSession();
         const onboarding = await getOnboardingComplete();
 
         if (sessao) {
-          destino = onboarding ? 'TreinoHub' : 'Peso';
+          if (onboarding) {
+            destino = 'TreinoHub';
+          } else {
+            const perfil = await getUserProfile();
+            if (!perfil?.peso) {
+              destino = 'Peso';
+            } else if (!perfil?.altura) {
+              destino = 'Altura';
+            } else if (!perfil?.genero || !perfil?.dataNascimento) {
+              destino = 'Genero';
+            } else {
+              destino = 'TreinoHub';
+            }
+          }
+        } else if (migracao.migrado) {
+          const perfil = await getUserProfile();
+          if (!perfil?.peso) {
+            destino = 'Peso';
+          } else if (!perfil?.altura) {
+            destino = 'Altura';
+          } else if (!perfil?.genero || !perfil?.dataNascimento) {
+            destino = 'Genero';
+          } else {
+            destino = 'TreinoHub';
+          }
         }
       } catch (error) {
         console.warn('Erro ao restaurar sessão:', error);
       }
 
       navigation.replace(destino);
-    }, 3000);
+    }, 0);
 
     return () => clearTimeout(timer);
   }, [navigation]);
@@ -78,7 +111,8 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style="light" />
       <IdiomaProvider>
-        <NavigationContainer>
+        <UserProvider>
+          <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Splash"
           screenOptions={{
@@ -125,13 +159,53 @@ export default function App() {
         />
 
         <Stack.Screen
+          name="EditarPerfil"
+          component={EditarPerfil}
+        />
+
+        <Stack.Screen
           name="Evolucao"
           component={Evolucao}
         />
 
         <Stack.Screen
+          name="Calendario"
+          component={Calendario}
+        />
+
+        <Stack.Screen
           name="Configuracoes"
           component={Configuracoes}
+        />
+
+        <Stack.Screen
+          name="Idioma"
+          component={Idioma}
+        />
+
+        <Stack.Screen
+          name="Unidade"
+          component={Unidade}
+        />
+
+        <Stack.Screen
+          name="FAQ"
+          component={FAQ}
+        />
+
+        <Stack.Screen
+          name="AvaliarApp"
+          component={AvaliarApp}
+        />
+
+        <Stack.Screen
+          name="Conta"
+          component={Conta}
+        />
+
+        <Stack.Screen
+          name="CatalogoExercicios"
+          component={CatalogoExercicios}
         />
 
         <Stack.Screen
@@ -176,6 +250,7 @@ export default function App() {
 
         </Stack.Navigator>
       </NavigationContainer>
+      </UserProvider>
       </IdiomaProvider>
     </SafeAreaProvider>
   );

@@ -1,21 +1,20 @@
-// Camada de preparação para API/banco.
-// As funções abaixo retornam null (ausência de dados) até o backend da GymVance existir.
-// Quando o backend da GymVance existir, substitua apenas estas implementações.
+// Camada de métricas 100% local (sem API/backend/banco).
+// As funções leem apenas dados salvos no próprio dispositivo (perfil do usuário).
 import { getUserProfile } from './storage';
 
-// TODO(api): substituir pela chamada real quando o backend existir.
+// Métrica sem fonte local configurada; retorna null (ausência de dados).
 export async function getKcalQueimadas() {
   return null;
 }
 
-// TODO(api): substituir pela chamada real quando o backend existir.
+// Meta diária de calorias configurada no perfil (salva localmente).
 export async function getKcalMeta() {
   const perfil = await getUserProfile();
   const meta = Number(perfil?.kcalMeta);
   return Number.isFinite(meta) && meta > 0 ? meta : null;
 }
 
-// TODO(api): substituir pela leitura de BPM do dispositivo/API.
+// BPM base do perfil (salvo localmente). Não há leitura de sensor/API.
 export async function getBpmAtual() {
   const perfil = await getUserProfile();
   const bpm = Number(perfil?.bpmBase);

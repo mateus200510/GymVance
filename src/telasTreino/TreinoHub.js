@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,8 +9,6 @@ import { getWorkoutHistory } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', laranja: '#FF7A1A' };
-
-const SEMANA = [];
 
 function calcularStreak(historico) {
   const dias = new Set();
@@ -45,10 +43,25 @@ function calcularStreak(historico) {
   return streak;
 }
 
+function getSemanaAtual() {
+  const hoje = new Date();
+  const inicioSemana = new Date(hoje);
+  inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+  const dias = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+  const semana = [];
+  for (let i = 0; i < 7; i++) {
+    const data = new Date(inicioSemana);
+    data.setDate(inicioSemana.getDate() + i);
+    semana.push({ letra: dias[i], numero: data.getDate() });
+  }
+  return semana;
+}
+
 export default function TreinoHub({ navigation }) {
   const { t } = useIdioma();
   const nomeUsuario = useNomeUsuario();
   const [streak, setStreak] = useState(0);
+  const semana = useMemo(() => getSemanaAtual(), []);
 
   useEffect(() => {
     let ativo = true;
@@ -102,9 +115,9 @@ export default function TreinoHub({ navigation }) {
           </View>
         </View>
 
-        {SEMANA.length > 0 && (
+        {semana.length > 0 && (
           <View style={styles.semanaRow}>
-            {SEMANA.map((d) => (
+            {semana.map((d) => (
               <View key={d.numero} style={styles.diaColuna}>
                 <Text style={styles.diaLetra}>{d.letra}</Text>
                 <Text style={styles.diaNumero}>{d.numero}</Text>

@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useNomeUsuario } from '../services/useUserProfile';
@@ -62,7 +63,7 @@ export default function Calorias({ navigation }) {
       <View style={styles.cabecalho}>
         <View style={styles.perfil}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarIcone}>👤</Text>
+            <Feather name="user" size={20} color="#fff" />
           </View>
           <View>
             <Text style={styles.evolucaoTexto}>{t('comum.evolucaoDiaria')}</Text>
@@ -70,7 +71,7 @@ export default function Calorias({ navigation }) {
           </View>
         </View>
         <Text style={styles.logo}>
-          Gym<Text style={styles.logoVerde}>vance</Text>
+          Gym<Text style={styles.logoVerde}>Vance</Text>
         </Text>
       </View>
 
@@ -88,7 +89,7 @@ export default function Calorias({ navigation }) {
             </View>
             <Text style={[styles.kcalNumero, { fontSize: Math.min(circleSize * 0.19, 50) }]}>{kcalQueimadas === null ? '—' : numero(kcalQueimadas)}</Text>
             <View style={styles.kcalLinha}>
-              <Text style={styles.chamaIcone}>🔥</Text>
+              <Feather name="zap" size={15} color={VERDE} style={styles.chamaIcone} />
               <Text style={styles.kcalLabel}>KCAL</Text>
             </View>
             <Text style={styles.kcalMetaTexto}>
@@ -106,7 +107,7 @@ export default function Calorias({ navigation }) {
           </View>
         </View>
         <View style={styles.bpmLinhaValor}>
-          <Text style={styles.coracaoIconeGrande}>♡</Text>
+          <Feather name="heart" size={22} color={VERDE} style={styles.coracaoIconeGrande} />
           <Text style={styles.bpmValor}>{bpmAtual === null ? '—' : bpmAtual}</Text>
           <Text style={styles.bpmUnidade}>BPM</Text>
         </View>

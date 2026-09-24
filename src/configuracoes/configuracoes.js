@@ -19,7 +19,7 @@ const VERDE = '#3DDC5C';
 function LinhaOpcao({ icone, rotulo, valor, mostrarValor, aoPressionar }) {
   return (
     <TouchableOpacity style={styles.opcao} activeOpacity={0.7} onPress={aoPressionar}>
-      <Feather name={icone} size={16} color={VERDE} />
+      {icone ? <Feather name={icone} size={16} color={VERDE} /> : <View style={{ width: 16, height: 16 }} />}
       <Text style={styles.opcaoRotulo}>{rotulo}</Text>
       {mostrarValor ? <Text style={styles.opcaoValor}>{valor}</Text> : null}
       <Feather name="chevron-right" size={16} color="#48484A" />
@@ -78,25 +78,13 @@ export default function Configuracoes({ navigation }) {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
           <Text style={styles.titulo}>{t('configuracoes.titulo')}</Text>
 
-          <Text style={styles.secaoTitulo}>{t('configuracoes.idioma')}</Text>
+          <Text style={styles.secaoTitulo}>{t('configuracoes.perfil')}</Text>
           <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.opcao}
-              activeOpacity={0.7}
-              onPress={() => definirIdioma('pt')}
-            >
-              <Text style={styles.opcaoRotulo}>{t('perfil.portugues')}</Text>
-              {idioma === 'pt' ? <Feather name="check" size={16} color={VERDE} /> : null}
-            </TouchableOpacity>
-            <View style={styles.divisor} />
-            <TouchableOpacity
-              style={styles.opcao}
-              activeOpacity={0.7}
-              onPress={() => definirIdioma('en')}
-            >
-              <Text style={styles.opcaoRotulo}>{t('perfil.ingles')}</Text>
-              {idioma === 'en' ? <Feather name="check" size={16} color={VERDE} /> : null}
-            </TouchableOpacity>
+            <LinhaOpcao
+              icone="user"
+              rotulo={t('configuracoes.perfil')}
+              aoPressionar={() => navigation?.navigate('Perfil')}
+            />
           </View>
 
           <Text style={styles.secaoTitulo}>{t('configuracoes.conta')}</Text>
@@ -108,6 +96,66 @@ export default function Configuracoes({ navigation }) {
               mostrarValor
               aoPressionar={() => navigation?.navigate('Planos')}
             />
+            <View style={styles.divisor} />
+            <LinhaOpcao
+              icone="user"
+              rotulo={t('configuracoes.conta')}
+              aoPressionar={() => navigation?.navigate('Conta')}
+            />
+          </View>
+
+          <Text style={styles.secaoTitulo}>{t('configuracoes.idioma')}</Text>
+          <View style={styles.card}>
+            <LinhaOpcao
+              icone="globe"
+              rotulo={t('configuracoes.idioma')}
+              aoPressionar={() => navigation?.navigate('Idioma')}
+            />
+          </View>
+
+          <Text style={styles.secaoTitulo}>{t('configuracoes.unidade')}</Text>
+          <View style={styles.card}>
+            <LinhaOpcao
+              icone="anchor"
+              rotulo={t('configuracoes.unidade')}
+              aoPressionar={() => navigation?.navigate('Unidade')}
+            />
+          </View>
+
+          <Text style={styles.secaoTitulo}>{t('configuracoes.faq')}</Text>
+          <View style={styles.card}>
+            <LinhaOpcao
+              icone="help-circle"
+              rotulo={t('configuracoes.faq')}
+              aoPressionar={() => navigation?.navigate('FAQ')}
+            />
+          </View>
+
+          <Text style={styles.secaoTitulo}>{t('configuracoes.avaliar')}</Text>
+          <View style={styles.card}>
+            <LinhaOpcao
+              icone="star"
+              rotulo={t('configuracoes.avaliar')}
+              aoPressionar={() => navigation?.navigate('AvaliarApp')}
+            />
+          </View>
+
+          <Text style={styles.secaoTitulo}>{t('configuracoes.treinos')}</Text>
+          <View style={styles.card}>
+            <LinhaOpcao
+              icone="activity"
+              rotulo={t('configuracoes.treinos')}
+              aoPressionar={() => navigation?.navigate('TreinoHub')}
+            />
+          </View>
+
+          <Text style={styles.secaoTitulo}>{t('configuracoes.pro')}</Text>
+          <View style={styles.card}>
+            <LinhaOpcao
+              icone="award"
+              rotulo={t('configuracoes.pro')}
+              aoPressionar={() => navigation?.navigate('Planos')}
+            />
           </View>
 
           <TouchableOpacity style={styles.botaoSair} activeOpacity={0.7} onPress={sair}>
@@ -117,7 +165,7 @@ export default function Configuracoes({ navigation }) {
         </ScrollView>
       </View>
 
-      <BottomNavBar />
+      <BottomNavBar activeTab="treino" />
     </SafeAreaView>
   );
 }

@@ -58,6 +58,14 @@ export default function Genero({ navigation }) {
   const [generoSelecionado, setGeneroSelecionado] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
 
+  const voltar = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.replace('Altura');
+    }
+  };
+
   useEffect(() => {
     const carregarPerfil = async () => {
       const perfil = await getUserProfile();
@@ -110,7 +118,7 @@ export default function Genero({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation?.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={voltar}>
           <Ionicons name="arrow-back" size={22} color="#3DDC5C" />
         </TouchableOpacity>
 

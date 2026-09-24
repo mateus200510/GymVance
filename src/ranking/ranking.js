@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,14 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useIdioma } from '../services/idioma';
-
-const PODIO = [];
+import { useNomeUsuario } from '../services/useUserProfile';
+import { getWorkoutHistory } from '../services/storage';
 
 const ABAS = [
   { id: 'semanal', label: 'ranking.semanal' },
@@ -20,10 +21,86 @@ const ABAS = [
   { id: 'geral', label: 'ranking.todas' },
 ];
 
+const MS_DIA = 24 * 60 * 60 * 1000;
+
+function diaInicio(data) {
+  return new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+}
+
+function calcularStreak(historico) {
+  const dias = new Set();
+
+  for (const item of historico || []) {
+    if (!item?.data) continue;
+    const data = new Date(item.data);
+    if (Number.isNaN(data.getTime())) continue;
+    dias.add(diaInicio(data));
+  }
+
+  if (dias.size === 0) return 0;
+
+  const hoje = diaInicio(new Date());
+  let atual = dias.has(hoje) ? hoje : hoje - MS_DIA;
+  let streak = 0;
+
+  while (dias.has(atual)) {
+    streak += 1;
+    atual -= MS_DIA;
+  }
+
+  return streak;
+}
+
+function contarPeriodo(historico, periodo) {
+  const agora = new Date();
+  const hoje = diaInicio(agora);
+  let treinos = 0;
+  const dias = new Set();
+
+  for (const item of historico || []) {
+    if (!item?.data) continue;
+    const data = new Date(item.data);
+    if (Number.isNaN(data.getTime())) continue;
+
+    if (periodo === 'semanal' && diaInicio(data) < hoje - 6 * MS_DIA) continue;
+    if (periodo === 'mensal' && (data.getMonth() !== agora.getMonth() || data.getFullYear() !== agora.getFullYear())) continue;
+
+    treinos += 1;
+    dias.add(diaInicio(data));
+  }
+
+  return { treinos, dias: dias.size };
+}
+
 export default function Ranking({ navigation }) {
   const { t } = useIdioma();
+  const nomeUsuario = useNomeUsuario();
   const [abaAtiva, setAbaAtiva] = useState('semanal');
-  const [dadosRanking] = useState([]);
+  const [dadosRanking, setDadosRanking] = useState([]);
+  const [streak, setStreak] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      let ativo = true;
+
+      (async () => {
+        const historico = await getWorkoutHistory();
+        if (!ativo) return;
+        setStreak(calcularStreak(historico));
+
+        const periodo = abaAtiva;
+        const { treinos, dias } = contarPeriodo(historico, periodo);
+        const nome = nomeUsuario || t('ranking.voce');
+        setDadosRanking([
+          { posicao: 1, nome, voce: true, treinos, dias },
+        ]);
+      })();
+
+      return () => {
+        ativo = false;
+      };
+    }, [abaAtiva, nomeUsuario, t])
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -34,51 +111,15 @@ export default function Ranking({ navigation }) {
         <View style={styles.header}>
           <View style={styles.streak}>
             <MaterialCommunityIcons name="fire" size={22} color="#3DDC5C" />
-            <Text style={styles.streakText}>—</Text>
+            <Text style={styles.streakText}>{streak}</Text>
           </View>
           <Text style={styles.logo}>
-            Gym<Text style={styles.logoAccent}>vance</Text>
+            Gym<Text style={styles.logoAccent}>Vance</Text>
           </Text>
         </View>
 
         <Text style={styles.titulo}>{t('ranking.geral')}</Text>
         <Text style={styles.subtitulo}>{t('ranking.subtitulo')}</Text>
-
-        {PODIO.length > 0 && (
-        <View style={styles.podioRow}>
-          {PODIO.map((item) => (
-            <View
-              key={item.posicao}
-              style={[styles.podioItem, item.posicao === 1 && styles.podioItemDestaque]}
-            >
-              {item.posicao === 1 && (
-                <FontAwesome5 name="crown" size={18} color="#F4C430" style={styles.coroa} />
-              )}
-              <View
-                style={[
-                  styles.podioAvatar,
-                  {
-                    borderColor: item.cor,
-                    width: item.posicao === 1 ? 76 : 62,
-                    height: item.posicao === 1 ? 76 : 62,
-                    borderRadius: item.posicao === 1 ? 38 : 31,
-                  },
-                ]}
-              >
-                <Ionicons name="person-outline" size={item.posicao === 1 ? 30 : 24} color="#555" />
-              </View>
-              <View style={[styles.posicaoBadge, { backgroundColor: item.cor }]}>
-                <Text style={styles.posicaoBadgeText}>{item.posicao}º</Text>
-              </View>
-              <Text style={styles.podioNome}>{item.nome}</Text>
-              <View style={[styles.podioDiasRow]}>
-                <MaterialCommunityIcons name="fire" size={13} color="#3DDC5C" />
-                <Text style={styles.podioDias}>{item.dias} {t('ranking.dias')}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-        )}
 
         <View style={styles.abasRow}>
           {ABAS.map((aba) => (
@@ -145,36 +186,16 @@ const styles = StyleSheet.create({
   logoAccent: { color: '#3DDC5C' },
   titulo: { color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
   subtitulo: { color: '#999', fontSize: 13, marginBottom: 28 },
-  podioRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    marginBottom: 28,
-  },
-  podioItem: { alignItems: 'center', width: 90 },
-  podioItemDestaque: { marginBottom: 10 },
+  podioRow: {},
+  podioItem: {},
+  podioItemDestaque: {},
   coroa: { marginBottom: 4 },
-  podioAvatar: {
-    borderWidth: 2,
-    backgroundColor: '#1E1E1E',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: -10,
-  },
-  posicaoBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#121212',
-    zIndex: 2,
-  },
-  posicaoBadgeText: { color: '#121212', fontWeight: 'bold', fontSize: 11 },
-  podioNome: { color: '#fff', fontWeight: 'bold', fontSize: 13, marginTop: 8 },
-  podioDiasRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  podioDias: { color: '#999', fontSize: 11, marginLeft: 3 },
+  podioAvatar: {},
+  posicaoBadge: {},
+  posicaoBadgeText: {},
+  podioNome: {},
+  podioDiasRow: {},
+  podioDias: {},
   abasRow: {
     flexDirection: 'row',
     backgroundColor: '#1A1A1A',

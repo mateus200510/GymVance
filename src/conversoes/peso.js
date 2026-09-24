@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -20,7 +21,7 @@ const KG_PARA_LBS = 2.20462;
 export default function PesoScreen({ navigation }) {
   const { t } = useIdioma();
   const [peso, setPeso] = useState('');
-  const [unidade, setUnidade] = useState('kg'); // 'kg' | 'lbs'
+  const [unidade, setUnidade] = useState('kg'); // 'kg' | 'lb'
 
   useEffect(() => {
     const carregarPerfil = async () => {
@@ -29,7 +30,7 @@ export default function PesoScreen({ navigation }) {
         setPeso(String(perfil.peso));
       }
       if (perfil?.pesoUnidade) {
-        setUnidade(perfil.pesoUnidade);
+        setUnidade(perfil.pesoUnidade === 'lbs' ? 'lb' : perfil.pesoUnidade);
       }
     };
 
@@ -37,18 +38,26 @@ export default function PesoScreen({ navigation }) {
   }, []);
 
   function trocarUnidade() {
-    const novaUnidade = unidade === 'kg' ? 'lbs' : 'kg';
+    const novaUnidade = unidade === 'kg' ? 'lb' : 'kg';
 
     if (peso) {
       const valor = parseFloat(peso.replace(',', '.'));
       if (!isNaN(valor)) {
         const convertido =
-          novaUnidade === 'lbs' ? valor * KG_PARA_LBS : valor / KG_PARA_LBS;
+          novaUnidade === 'lb' ? valor * KG_PARA_LBS : valor / KG_PARA_LBS;
         setPeso(convertido.toFixed(1));
       }
     }
     setUnidade(novaUnidade);
   }
+
+  const voltar = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.replace('Cadastro');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -58,13 +67,17 @@ export default function PesoScreen({ navigation }) {
       >
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => navigation.goBack()}
+        onPress={voltar}
       >
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </TouchableOpacity>
 
       <View style={styles.logoContainer}>
-        <Text style={styles.logo}>||G||</Text>
+        <Image
+          source={require('../../assets/FundoPretoRestoBranco-removebg-preview.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </View>
 
       <View style={styles.progressBar} />
@@ -84,7 +97,7 @@ export default function PesoScreen({ navigation }) {
         />
         <TouchableOpacity style={styles.unitButton} onPress={trocarUnidade}>
           <Text style={styles.unitText}>
-            {unidade === 'kg' ? 'Kg' : 'lbs'}
+            {unidade === 'kg' ? 'Kg' : 'lb'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -109,7 +122,7 @@ export default function PesoScreen({ navigation }) {
             return;
           }
 
-          navigation.navigate('Altura');
+          navigation.replace('Altura');
         }}
       >
         <Text style={styles.advanceText}>{t('comum.avancar')}</Text>
@@ -139,10 +152,8 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   logo: {
-    color: '#fff',
-    fontSize: 32,
-    fontWeight: 'bold',
-    letterSpacing: 2,
+    width: 120,
+    height: 120,
   },
   progressBar: {
     height: 2,

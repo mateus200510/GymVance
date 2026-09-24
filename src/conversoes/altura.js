@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -50,6 +51,14 @@ export default function AlturaScreen({ navigation }) {
     setUnidade(novaUnidade);
   }
 
+  const voltar = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.replace('Peso');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -58,13 +67,17 @@ export default function AlturaScreen({ navigation }) {
       >
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => navigation.goBack()}
+        onPress={voltar}
       >
         <Ionicons name="arrow-back" size={22} color="#fff" />
       </TouchableOpacity>
 
       <View style={styles.logoContainer}>
-        <Text style={styles.logo}>||G||</Text>
+        <Image
+          source={require('../../assets/FundoPretoRestoBranco-removebg-preview.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </View>
 
       <View style={styles.progressBar} />
@@ -109,7 +122,7 @@ export default function AlturaScreen({ navigation }) {
             return;
           }
 
-          navigation.navigate('Genero');
+          navigation.replace('Genero');
         }}
       >
         <Text style={styles.advanceText}>{t('comum.avancar')}</Text>
@@ -139,10 +152,8 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   logo: {
-    color: '#fff',
-    fontSize: 32,
-    fontWeight: 'bold',
-    letterSpacing: 2,
+    width: 120,
+    height: 120,
   },
   progressBar: {
     height: 2,
