@@ -298,10 +298,30 @@ export default function SessaoAtiva({ navigation, route }) {
   };
 
   const adicionarSerie = () => {
-    setSeries((prev) => [
-      ...prev,
-      { id: proximoId.current++, tipo: 'NORMAL', kg: '', reps: '', concluido: false, falhou: false, nota: '' },
-    ]);
+    const ultima = series.length > 0 ? series[series.length - 1] : null;
+    const temExercicio = ultima && (ultima.exercicioNome || ultima.exercicioIdx !== undefined);
+    if (!temExercicio) {
+      Alert.alert(t('sessaoAtiva.serieSemExercicio'), t('sessaoAtiva.serieSemExercicioMsg'));
+      return;
+    }
+    setSeries((prev) => {
+      const ultima = prev.length > 0 ? prev[prev.length - 1] : null;
+      return [
+        ...prev,
+        {
+          id: proximoId.current++,
+          tipo: 'NORMAL',
+          kg: '',
+          reps: '',
+          concluido: false,
+          falhou: false,
+          nota: '',
+          ...(ultima?.exercicioNome || ultima?.exercicioIdx !== undefined
+            ? { exercicioNome: ultima.exercicioNome, exercicioIdx: ultima.exercicioIdx }
+            : {}),
+        },
+      ];
+    });
   };
 
   const alterarTipoSerie = (id, tipo) => {

@@ -25,29 +25,62 @@ function safeJsonParse(raw, fallback) {
   }
 }
 
-export function normalizarDataNascimento(value) {
-  if (!value) {
+// Constroi uma data civil válida a partir dos componentes ano/mês/dia.
+// Usa `new Date(ano, mes - 1, dia)` (Date local, sem string/timezone), que
+// nunca sofre deslocamento UTC ↔ local nem depende do parser do motor JS.
+// A validação também protege contra o caso especial de anos 0–99 do JS.
+function montarDataCivil(ano, mes, dia) {
+  if (!Number.isInteger(ano) || !Number.isInteger(mes) || !Number.isInteger(dia)) {
     return null;
   }
 
-  if (typeof value === 'string') {
-    const soDigitos = value.replace(/\D/g, '');
+  const data = new Date(ano, mes - 1, dia);
+  if (
+    data.getFullYear() !== ano ||
+    data.getMonth() !== mes - 1 ||
+    data.getDate() !== dia
+  ) {
+    return null;
+  }
 
-    if (/^\d{8}$/.test(soDigitos)) {
-      const dia = soDigitos.slice(0, 2);
-      const mes = soDigitos.slice(2, 4);
-      const ano = soDigitos.slice(4, 8);
-      return `${ano}-${mes}-${dia}`;
-    }
+  return `${String(ano).padStart(4, '0')}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+}
 
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      return value;
-    }
+// Normaliza a data de nascimento para o formato canônico YYYY-MM-DD.
+// A ordem dos formatos é importante e idempotente:
+// 1. formatos explícitos (ISO e DD/MM/YYYY) primeiro — nunca são reinterpretados;
+// 2. somente depois o formato "puro" de 8 dígitos (legado DDMMYYYY).
+// Antes, o bloco de 8 dígitos rodava primeiro sobre os dígitos de qualquer
+// string, corrompendo datas ISO já válidas (ex.: "2010-05-20" → "0520-10-20").
+export function normalizarDataNascimento(value) {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
 
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-      const [dia, mes, ano] = value.split('/');
-      return `${ano}-${mes}-${dia}`;
-    }
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (iso) {
+    return montarDataCivil(
+      Number(iso[1]),
+      Number(iso[2]),
+      Number(iso[3])
+    );
+  }
+
+  const br = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  if (br) {
+    return montarDataCivil(
+      Number(br[3]),
+      Number(br[2]),
+      Number(br[1])
+    );
+  }
+
+  if (/^\d{8}$/.test(value)) {
+    return montarDataCivil(
+      Number(value.slice(4, 8)),
+      Number(value.slice(2, 4)),
+      Number(value.slice(0, 2))
+    );
   }
 
   return null;
@@ -873,14 +906,29 @@ export function formatarAltura(valor, unidade) {
 }
 
 export function calcularIdade(dataNascimento) {
-  if (!dataNascimento) return null;
-  const hoje = new Date();
-  const nascimento = new Date(dataNascimento);
-  let idade = hoje.getFullYear() - nascimento.getFullYear();
-  const mesDiff = hoje.getMonth() - nascimento.getMonth();
-  if (mesDiff < 0 || (mesDiff === 0 && hoje.getDate() < nascimento.getDate())) {
-    idade--;
+  const data = normalizarDataNascimento(dataNascimento);
+  if (!data) {
+    return null;
   }
+
+  const [ano, mes, dia] = data.split('-').map(Number);
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = hoje.getMonth() + 1;
+  const diaAtual = hoje.getDate();
+
+  if (
+    ano > anoAtual ||
+    (ano === anoAtual && (mes > mesAtual || (mes === mesAtual && dia > diaAtual)))
+  ) {
+    return null;
+  }
+
+  let idade = anoAtual - ano;
+  if (mesAtual < mes || (mesAtual === mes && diaAtual < dia)) {
+    idade -= 1;
+  }
+
   return idade;
 }
 

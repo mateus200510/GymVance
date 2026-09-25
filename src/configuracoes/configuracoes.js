@@ -28,7 +28,7 @@ function LinhaOpcao({ icone, rotulo, valor, mostrarValor, aoPressionar }) {
 }
 
 export default function Configuracoes({ navigation }) {
-  const { t, idioma, definirIdioma } = useIdioma();
+  const { t } = useIdioma();
   const [plano, setPlano] = useState(null);
 
   useEffect(() => {

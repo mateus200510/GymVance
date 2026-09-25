@@ -201,50 +201,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 14,
   },
-  selectBox: {
-    borderWidth: 1,
-    borderColor: '#2C2C2C',
-    backgroundColor: '#111111',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-  },
   label: {
     color: '#B7B7B7',
     fontSize: 12,
     marginBottom: 4,
-  },
-  value: {
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
-  gridMeses: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
-  },
-  mesItem: {
-    width: '30%',
-    borderRadius: 10,
-    backgroundColor: '#181818',
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-  },
-  mesItemAtivo: {
-    backgroundColor: '#1E1E1E',
-    borderColor: '#3DDC5C',
-  },
-  mesTexto: {
-    color: '#E6E6E6',
-    fontSize: 12,
-  },
-  mesTextoAtivo: {
-    color: '#3DDC5C',
-    fontWeight: '700',
   },
   stepText: {
     color: '#8E8E93',
@@ -323,23 +283,6 @@ const styles = StyleSheet.create({
   generoTexto: {
     color: '#FFFFFF',
     fontSize: 15,
-  },
-  dataRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  dataInput: {
-    width: '30%',
-    borderWidth: 1,
-    borderColor: '#3D3D3D',
-    backgroundColor: '#111111',
-    color: '#FFFFFF',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 12,
-    textAlign: 'center',
-    fontSize: 14,
   },
   button: {
     backgroundColor: '#3DDC5C',

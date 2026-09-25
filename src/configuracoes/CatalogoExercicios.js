@@ -351,7 +351,7 @@ export default function CatalogoExercicios({ navigation, route }) {
         <View style={styles.modalFundo}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitulo}>
-              {editandoId ? t('exercicios.editarTitulo') : t('exercicios.criarPersonalizado').replace('+ ', '')}
+              {editandoId ? t('exercicios.editarTitulo') : t('exercicios.criarTitulo')}
             </Text>
             <TextInput
               style={styles.modalInput}

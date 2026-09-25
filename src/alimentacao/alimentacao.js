@@ -16,9 +16,16 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { getProgressPhotos, saveProgressPhoto, deleteProgressPhoto } from '../services/storage';
 
 import BottomNavBar from '../components/BottomNavBar';
+import DemoTag from '../components/DemoTag';
 import { useNomeUsuario } from '../services/useUserProfile';
 import { useIdioma } from '../services/idioma';
 import { getKcalMeta, getKcalQueimadas } from '../services/metricas';
+import {
+  MODO_DEMONSTRACAO,
+  DEMO_META_KCAL,
+  getDemoRefeicoes,
+  getDemoTotais,
+} from '../services/demo';
 
 function BarraProgresso({ percentual, cor = '#3DDC5C' }) {
   return (
@@ -28,7 +35,7 @@ function BarraProgresso({ percentual, cor = '#3DDC5C' }) {
   );
 }
 
-function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuario, kcalAtual, kcalMeta, refeicoes = [] }) {
+function TelaDashboard({ onAbrirGaleria, onAbrirCamera, onAbrirIA, fotoCapturada, nomeUsuario, kcalAtual, kcalMeta, refeicoes = [], macros = null, modoDemo = false }) {
   const { t } = useIdioma();
   const percentualKcal = kcalAtual !== null && kcalMeta
     ? Math.min(100, Math.round((kcalAtual / kcalMeta) * 100))
@@ -63,6 +70,13 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuar
         </View>
       ) : null}
 
+      {modoDemo && (
+        <View style={styles.demoArea}>
+          <DemoTag />
+          <Text style={styles.avisoDemo}>{t('demo.aviso')}</Text>
+        </View>
+      )}
+
       {/* Consumo diário */}
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
@@ -74,6 +88,31 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, fotoCapturada, nomeUsuar
         </Text>
         <BarraProgresso percentual={percentualKcal} />
       </View>
+
+      <TouchableOpacity style={styles.btnIA} onPress={onAbrirIA} activeOpacity={0.8}>
+        <Feather name="message-circle" size={17} color="#3DDC5C" />
+        <Text style={styles.btnIAText}>{t('alimentacao.conversarComIA')}</Text>
+      </TouchableOpacity>
+
+      {modoDemo && macros && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitulo}>{t('alimentacao.macros')}</Text>
+          <View style={styles.macrosRow}>
+            <View style={styles.macroItem}>
+              <Text style={styles.macroLabel}>{t('alimentacao.proteinas')}</Text>
+              <Text style={styles.macroValor}>{macros.proteinas}g</Text>
+            </View>
+            <View style={styles.macroItem}>
+              <Text style={styles.macroLabel}>{t('alimentacao.carboidratos')}</Text>
+              <Text style={styles.macroValor}>{macros.carboidratos}g</Text>
+            </View>
+            <View style={[styles.macroItem, { marginRight: 0 }]}>
+              <Text style={styles.macroLabel}>{t('alimentacao.gorduras')}</Text>
+              <Text style={styles.macroValor}>{macros.gorduras}g</Text>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Refeições de hoje (apenas quando houver registros; não há cadastro de
           refeições neste build) */}
@@ -140,7 +179,7 @@ function TelaGaleria({ onVoltar, fotos = [], onExcluirFoto }) {
 }
 
 export default function Alimentacao({ navigation }) {
-  const { t } = useIdioma();
+  const { t, idioma } = useIdioma();
   const nomeUsuario = useNomeUsuario();
   const [tela, setTela] = useState('dashboard');
   const [cameraPermission, requestPermission] = useCameraPermissions();
@@ -149,6 +188,12 @@ export default function Alimentacao({ navigation }) {
   const [kcalAtual, setKcalAtual] = useState(null);
   const [kcalMeta, setKcalMeta] = useState(null);
   const cameraRef = useRef(null);
+
+  const refeicoesDemo = MODO_DEMONSTRACAO
+    ? getDemoRefeicoes(idioma).map((r) => ({ ...r, nome: t(r.nomeKey) }))
+    : [];
+
+  const macrosDemo = MODO_DEMONSTRACAO ? getDemoTotais(idioma) : null;
 
   const carregarGaleria = async () => {
     const fotos = await getProgressPhotos();
@@ -166,6 +211,15 @@ export default function Alimentacao({ navigation }) {
     let ativo = true;
 
     (async () => {
+      if (MODO_DEMONSTRACAO) {
+        const totais = getDemoTotais(idioma);
+        if (ativo) {
+          setKcalAtual(totais.kcal);
+          setKcalMeta(DEMO_META_KCAL);
+        }
+        return;
+      }
+
       const [atual, meta] = await Promise.all([
         getKcalQueimadas(),
         getKcalMeta(),
@@ -179,7 +233,7 @@ export default function Alimentacao({ navigation }) {
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [idioma]);
 
   const excluirFoto = async (foto) => {
     try {
@@ -269,10 +323,14 @@ export default function Alimentacao({ navigation }) {
         <TelaDashboard
           onAbrirGaleria={abrirGaleria}
           onAbrirCamera={abrirCamera}
+          onAbrirIA={() => navigation?.navigate('ChatIA')}
           fotoCapturada={fotoCapturada}
           nomeUsuario={nomeUsuario}
           kcalAtual={kcalAtual}
           kcalMeta={kcalMeta}
+          refeicoes={refeicoesDemo}
+          macros={macrosDemo}
+          modoDemo={MODO_DEMONSTRACAO}
         />
       ) : tela === 'galeria' ? (
         <TelaGaleria fotos={fotosGaleria} onVoltar={() => setTela('dashboard')} onExcluirFoto={excluirFoto} />
@@ -310,7 +368,6 @@ const styles = StyleSheet.create({
   headerNome: { color: '#fff', fontSize: 14, flex: 1 },
   headerDireita: { flexDirection: 'row', alignItems: 'center' },
   logo: { color: '#3DDC5C', fontWeight: '700', fontSize: 15 },
-  diasRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   diaItem: { alignItems: 'center' },
   diaLabel: { color: '#8E8E93', fontSize: 11, marginBottom: 6 },
   diaCirculo: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
@@ -321,11 +378,26 @@ const styles = StyleSheet.create({
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   cardTitulo: { color: '#fff', fontSize: 14, fontWeight: '600' },
   cardPercentual: { color: '#3DDC5C', fontSize: 13, fontWeight: '600' },
+  demoArea: { marginBottom: 16, alignItems: 'flex-start' },
+  avisoDemo: { color: '#8E8E93', fontSize: 11, marginTop: 6, lineHeight: 15 },
+  btnIA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(61, 220, 92, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(61, 220, 92, 0.6)',
+    borderRadius: 12,
+    paddingVertical: 13,
+    marginBottom: 20,
+  },
+  btnIAText: { color: '#3DDC5C', fontWeight: '700', fontSize: 14 },
+  macrosRow: { flexDirection: 'row', marginTop: 12 },
   kcalTexto: { color: '#fff', fontSize: 28, fontWeight: '700', marginBottom: 8 },
   kcalMeta: { color: '#8E8E93', fontSize: 14, fontWeight: '400' },
   barraFundo: { height: 6, backgroundColor: '#2C2C2E', borderRadius: 3, overflow: 'hidden' },
   barraPreenchida: { height: 6, borderRadius: 3 },
-  macrosRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 },
   macroItem: { flex: 1, marginRight: 8 },
   macroLabel: { color: '#8E8E93', fontSize: 10, marginBottom: 4 },
   macroValor: { color: '#fff', fontSize: 13, fontWeight: '600', marginBottom: 6 },
@@ -345,7 +417,4 @@ const styles = StyleSheet.create({
   galeriaFotoReal: { width: '100%', height: '100%' },
   galeriaFotoExcluir: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center' },
   galeriaFotoVazia: { width: '23%', aspectRatio: 1, margin: '1%', backgroundColor: '#1C1C1E', borderRadius: 6, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#2C2C2E', borderStyle: 'dashed' },
-  navBar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#1C1C1E', backgroundColor: '#000' },
-  navItem: { alignItems: 'center' },
-  navLabel: { color: '#8E8E93', fontSize: 10, marginTop: 2 },
 });

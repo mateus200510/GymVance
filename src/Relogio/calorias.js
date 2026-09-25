@@ -12,9 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
+import DemoTag from '../components/DemoTag';
 import { useNomeUsuario } from '../services/useUserProfile';
 import { useIdioma } from '../services/idioma';
 import { getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
+import { MODO_DEMONSTRACAO, DEMO_CALORIAS } from '../services/demo';
 
 // Tela de "Calorias" do GymVance
 // Mesma identidade visual da tela de Batimento, mas com a queima diária em destaque
@@ -35,6 +37,15 @@ export default function Calorias({ navigation }) {
     let ativo = true;
 
     (async () => {
+      if (MODO_DEMONSTRACAO) {
+        if (ativo) {
+          setKcalQueimadas(DEMO_CALORIAS.queimadas);
+          setKcalMeta(DEMO_CALORIAS.meta);
+          setBpmAtual(DEMO_CALORIAS.bpmAtual);
+        }
+        return;
+      }
+
       const [kcal, meta, bpm] = await Promise.all([
         getKcalQueimadas(),
         getKcalMeta(),
@@ -54,6 +65,9 @@ export default function Calorias({ navigation }) {
       ativo = false;
     };
   }, []);
+
+  const historico = MODO_DEMONSTRACAO ? DEMO_CALORIAS.historico : [];
+  const maxHistorico = historico.length > 0 ? Math.max(...historico) : 1;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -77,6 +91,13 @@ export default function Calorias({ navigation }) {
 
       {/* Conteúdo rolável */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {MODO_DEMONSTRACAO && (
+          <View style={styles.demoArea}>
+            <DemoTag />
+            <Text style={styles.avisoDemo}>{t('demo.aviso')}</Text>
+          </View>
+        )}
+
         {/* Círculo de calorias */}
         <View style={styles.circuloWrapper}>
           <TouchableOpacity
@@ -102,9 +123,11 @@ export default function Calorias({ navigation }) {
       <View style={styles.blocoBpm}>
         <View style={styles.bpmCabecalho}>
           <Text style={styles.bpmTitulo}>{t('calorias.batimentoCardiaco')}</Text>
-          <View style={styles.badgeStatus}>
-            <Text style={styles.badgeStatusTexto}>{t('calorias.normal')}</Text>
-          </View>
+          {bpmAtual !== null && (
+            <View style={styles.badgeStatus}>
+              <Text style={styles.badgeStatusTexto}>{t('calorias.normal')}</Text>
+            </View>
+          )}
         </View>
         <View style={styles.bpmLinhaValor}>
           <Feather name="heart" size={22} color={VERDE} style={styles.coracaoIconeGrande} />
@@ -112,6 +135,32 @@ export default function Calorias({ navigation }) {
           <Text style={styles.bpmUnidade}>BPM</Text>
         </View>
       </View>
+
+      {historico.length > 0 && (
+        <View style={styles.blocoHistorico}>
+          <Text style={styles.historicoTitulo}>{t('calorias.historico')}</Text>
+          <View style={styles.barrasLinha}>
+            {historico.map((valor, index) => {
+              const data = new Date();
+              data.setDate(data.getDate() - (historico.length - 1 - index));
+              return (
+                <View key={`${index}-${valor}`} style={styles.barraColuna}>
+                  <Text style={styles.barraValor}>{valor}</Text>
+                  <View style={styles.barraTrilho}>
+                    <View
+                      style={[
+                        styles.barraPreenchidaHistorico,
+                        { height: `${Math.max(15, (valor / maxHistorico) * 100)}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.barraDia}>{t(`calendario.diaSemana.${data.getDay()}`)}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
       </ScrollView>
 
       <BottomNavBar activeTab="relogio" />
@@ -153,9 +202,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
-  },
-  avatarIcone: {
-    fontSize: 16,
   },
   evolucaoTexto: {
     color: '#999999',
@@ -226,6 +272,43 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
   },
+  demoArea: { alignItems: 'flex-start', marginTop: 18 },
+  avisoDemo: { color: '#888888', fontSize: 11, marginTop: 6, lineHeight: 15 },
+  blocoHistorico: {
+    backgroundColor: CINZA_ESCURO,
+    borderRadius: 14,
+    marginTop: 18,
+    padding: 16,
+  },
+  historicoTitulo: {
+    color: '#AAAAAA',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: 14,
+  },
+  barrasLinha: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  barraColuna: { flex: 1, alignItems: 'center' },
+  barraValor: { color: VERDE, fontSize: 9, fontWeight: '700', marginBottom: 4 },
+  barraTrilho: {
+    width: '60%',
+    height: 80,
+    borderRadius: 6,
+    backgroundColor: '#2A2A2A',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  barraPreenchidaHistorico: {
+    width: '100%',
+    borderRadius: 6,
+    backgroundColor: VERDE,
+  },
+  barraDia: { color: '#888888', fontSize: 10, marginTop: 5 },
   bpmCabecalho: {
     flexDirection: 'row',
     justifyContent: 'space-between',

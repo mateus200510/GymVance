@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import BottomNavBar from '../components/BottomNavBar';
 import { useIdioma } from '../services/idioma';
 import { useUsuario } from '../services/UserContext';
-import { getUserProfile, saveUserProfile, authenticateUser, getSession, getContas, saveAccount } from '../services/storage';
+import { getUserProfile, saveUserProfile, authenticateUser, getSession, saveAccount } from '../services/storage';
 
 const VERDE = '#3DDC5C';
 
@@ -89,8 +89,6 @@ export default function Conta({ navigation }) {
 
     setCarregando(true);
     try {
-      const contasObj = await getContas();
-      contasObj[sessao.email] = { senha: novaSenha };
       await saveAccount({ email: sessao.email, senha: novaSenha });
       setSenhaAtual('');
       setNovaSenha('');

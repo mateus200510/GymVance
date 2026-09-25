@@ -288,7 +288,6 @@ const styles = StyleSheet.create({
   infoLabel: { color: '#8E8E93', fontSize: 13 },
   infoValor: { color: '#fff', fontSize: 13, fontWeight: '600' },
   statsGrid: { gap: 8 },
-  calendarioPlaceholder: { color: '#8E8E93', fontSize: 13, textAlign: 'center', paddingVertical: 20 },
   calendarioRow: { flexDirection: 'row', alignItems: 'center' },
   calendarioCardTitulo: { color: '#fff', fontSize: 15, fontWeight: '600', marginLeft: 8, flex: 1 },
   botaoEvolucao: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: VERDE, borderRadius: 24, paddingVertical: 12 },

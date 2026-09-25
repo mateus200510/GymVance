@@ -116,14 +116,24 @@ export default function TreinoHub({ navigation }) {
         </View>
 
         {semana.length > 0 && (
-          <View style={styles.semanaRow}>
-            {semana.map((d) => (
-              <View key={d.numero} style={styles.diaColuna}>
-                <Text style={styles.diaLetra}>{d.letra}</Text>
-                <Text style={styles.diaNumero}>{d.numero}</Text>
-              </View>
-            ))}
-          </View>
+          <TouchableOpacity
+            style={styles.semanaCard}
+            onPress={() => navigation?.navigate('CalendarioCompleto')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.semanaRow}>
+              {semana.map((d) => (
+                <View key={d.numero} style={styles.diaColuna}>
+                  <Text style={styles.diaLetra}>{d.letra}</Text>
+                  <Text style={styles.diaNumero}>{d.numero}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.verCalendarioRow}>
+              <Ionicons name="calendar-outline" size={13} color={COLORS.green} />
+              <Text style={styles.verCalendarioText}>{t('calendario.verCalendario')}</Text>
+            </View>
+          </TouchableOpacity>
         )}
 
         <Text style={styles.sessaoTitulo}>{t('treinoHub.sessaoTreino')}</Text>
@@ -168,7 +178,19 @@ const styles = StyleSheet.create({
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   avatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#333' },
   userNome: { color: COLORS.text, fontWeight: '600', fontSize: 13 },
-  semanaRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: COLORS.card, borderRadius: 14, padding: 12, marginTop: 20 },
+  semanaRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  semanaCard: { backgroundColor: COLORS.card, borderRadius: 14, padding: 12, marginTop: 20 },
+  verCalendarioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#2A2A2A',
+  },
+  verCalendarioText: { color: COLORS.green, fontSize: 12, fontWeight: '700' },
   diaColuna: { alignItems: 'center', gap: 6 },
   diaLetra: { color: COLORS.muted, fontSize: 11 },
   diaNumero: { color: COLORS.text, fontWeight: '600', fontSize: 13 },

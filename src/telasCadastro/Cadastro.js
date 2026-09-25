@@ -196,6 +196,18 @@ export default function Cadastro({ navigation }) {
           </Text>
         </TouchableOpacity>
 
+        {/* ENTRAR — acesso à tela existente para quem já possui conta */}
+        <TouchableOpacity
+          style={styles.buttonSecondary}
+          onPress={() => navigation.replace('Entrar')}
+          accessibilityRole="button"
+          accessibilityLabel={t('comum.entrar')}
+        >
+          <Text style={styles.buttonSecondaryText}>
+            {t('comum.entrar')}
+          </Text>
+        </TouchableOpacity>
+
         {/* DIVISOR */}
         <View style={styles.dividerContainer}>
           <View style={styles.divider} />
@@ -407,6 +419,23 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: '#121212',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+
+  buttonSecondary: {
+    width: '100%',
+    height: 55,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: COLORS.green,
+  },
+
+  buttonSecondaryText: {
+    color: COLORS.green,
     fontSize: 17,
     fontWeight: '700',
   },

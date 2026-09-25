@@ -38,6 +38,8 @@ import SessaoAtiva from './src/telasTreino/SessaoAtiva';
 
 import Mensal from './src/telasPlanos/mensal';
 import Alimentacao from './src/alimentacao/alimentacao';
+import ChatIA from './src/alimentacao/chatIA';
+import CalendarioCompleto from './src/calendario/calendario';
 import Batimento from './src/Relogio/batimento';
 import Calorias from './src/Relogio/calorias';
 import Genero from './src/genero/genero';
@@ -216,6 +218,16 @@ export default function App() {
         <Stack.Screen
           name="Alimentacao"
           component={Alimentacao}
+        />
+
+        <Stack.Screen
+          name="ChatIA"
+          component={ChatIA}
+        />
+
+        <Stack.Screen
+          name="CalendarioCompleto"
+          component={CalendarioCompleto}
         />
 
         <Stack.Screen
