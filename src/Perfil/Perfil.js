@@ -18,7 +18,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import { getUserProfile, saveUserProfile, getWorkoutHistory, formatarDataNascimento, getEstatisticasTreino, calcularIdade, formatarPeso, formatarAltura } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 import { useUsuario } from '../services/UserContext';
-import { selecionarFotoDaGaleria } from '../services/fotoPerfil';
+import { selecionarFotoDaGaleria, removerFotoPerfilLocal } from '../services/fotoPerfil';
 
 const VERDE = '#3DDC5C';
 
@@ -153,6 +153,24 @@ export default function Perfil({ navigation }) {
     }
   };
 
+  const removerFoto = async () => {
+    Alert.alert(
+      t('editarPerfil.removerFoto'),
+      t('perfil.confirmarRemoverFoto'),
+      [
+        { text: t('comum.cancelar'), style: 'cancel' },
+        { text: t('editarPerfil.removerFoto'), style: 'destructive', onPress: async () => {
+            if (perfil?.foto) {
+              await removerFotoPerfilLocal(perfil.foto);
+              await saveUserProfile({ foto: null });
+              setPerfil((prev) => ({ ...prev, foto: null }));
+              await refreshUsuario();
+            }
+          } },
+      ]
+    );
+  };
+
   const abrirEditarPerfil = () => {
     navigation?.navigate('EditarPerfil');
   };
@@ -189,6 +207,12 @@ export default function Perfil({ navigation }) {
               <Feather name="user" size={36} color="#8E8E93" />
             )}
           </TouchableOpacity>
+          {perfil?.foto && (
+            <TouchableOpacity style={styles.botaoRemoverFoto} onPress={removerFoto}>
+              <Feather name="trash-2" size={14} color="#FF453A" />
+              <Text style={styles.botaoRemoverFotoTexto}>{t('editarPerfil.removerFoto')}</Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.nomeGrande}>{perfil?.nome || t('comum.usuario')}</Text>
 
           <View style={styles.statsRow}>
@@ -275,6 +299,8 @@ const styles = StyleSheet.create({
   titulo: { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 16 },
   avatarGrande: { width: 84, height: 84, borderRadius: 42, backgroundColor: '#1C1C1E', justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: 10, overflow: 'hidden' },
   avatarImageGrande: { width: '100%', height: '100%', borderRadius: 42 },
+  botaoRemoverFoto: { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', gap: 4, marginTop: 4, marginBottom: 10, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#1C1C1E', borderRadius: 12, borderWidth: 1, borderColor: '#FF453A' },
+  botaoRemoverFotoTexto: { color: '#FF453A', fontSize: 11, fontWeight: '600' },
   nomeGrande: { color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 20 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   statCard: { flex: 1, alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 14, padding: 16, marginHorizontal: 4, gap: 6 },

@@ -64,10 +64,19 @@ export default function ChatIA({ navigation }) {
     };
   }, []);
 
+  const scrollToBottom = useRef(false);
+
   useEffect(() => {
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    });
+    scrollToBottom.current = true;
+  }, [mensagens]);
+
+  useEffect(() => {
+    if (scrollToBottom.current && !digitando) {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollToEnd({ animated: true });
+        scrollToBottom.current = false;
+      });
+    }
   }, [mensagens, digitando]);
 
   const enviarTexto = (texto) => {
@@ -100,10 +109,11 @@ export default function ChatIA({ navigation }) {
   ];
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? 0 : undefined}
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation?.goBack()} accessibilityLabel={t('perfil.voltar')}>
@@ -127,6 +137,12 @@ export default function ChatIA({ navigation }) {
           contentContainerStyle={styles.mensagensContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => {
+            if (scrollToBottom.current && !digitando) {
+              scrollRef.current?.scrollToEnd({ animated: true });
+              scrollToBottom.current = false;
+            }
+          }}
         >
           {mensagens.map((msg) => (
             <View

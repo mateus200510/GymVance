@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
-import { useNomeUsuario } from '../services/useUserProfile';
+import { useNomeUsuario, useFotoPerfil } from '../services/useUserProfile';
 import { getWorkoutHistory } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
@@ -60,6 +60,7 @@ function getSemanaAtual() {
 export default function TreinoHub({ navigation }) {
   const { t } = useIdioma();
   const nomeUsuario = useNomeUsuario();
+  const fotoUsuario = useFotoPerfil();
   const [streak, setStreak] = useState(0);
   const semana = useMemo(() => getSemanaAtual(), []);
 
@@ -93,8 +94,10 @@ export default function TreinoHub({ navigation }) {
           <TouchableOpacity style={styles.userBox} onPress={() => navigation?.navigate('Perfil')} activeOpacity={0.7}>
             <Text style={styles.tituloSecundario}>{t('comum.evolucaoDiaria')}</Text>
             <View style={styles.userRow}>
-              <View style={styles.avatar} />
-              <Text style={styles.userNome} numberOfLines={1} ellipsizeMode="tail">{nomeUsuario}</Text>
+              <View style={styles.avatar}>
+                {fotoUsuario ? <Image source={{ uri: fotoUsuario }} style={styles.avatarImage} /> : null}
+              </View>
+              <Text style={styles.userNome} numberOfLines={1} ellipsizeMode="tail">{nomeUsuario || '—'}</Text>
             </View>
           </TouchableOpacity>
           <View style={styles.headerActions}>
@@ -177,6 +180,7 @@ const styles = StyleSheet.create({
   tituloSecundario: { color: COLORS.muted, fontSize: 11 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   avatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#333' },
+  avatarImage: { width: 20, height: 20, borderRadius: 10 },
   userNome: { color: COLORS.text, fontWeight: '600', fontSize: 13 },
   semanaRow: { flexDirection: 'row', justifyContent: 'space-between' },
   semanaCard: { backgroundColor: COLORS.card, borderRadius: 14, padding: 12, marginTop: 20 },

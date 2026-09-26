@@ -15,11 +15,9 @@ import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
-import DemoTag from '../components/DemoTag';
 import { useNomeUsuario } from '../services/useUserProfile';
 import { useIdioma } from '../services/idioma';
 import { getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
-import { MODO_DEMONSTRACAO, DEMO_BATIMENTOS } from '../services/demo';
 
 // Tela de "Batimento Cardíaco" do GymVance
 // Mostra o BPM em destaque no círculo central e a queima diária logo abaixo
@@ -80,15 +78,6 @@ export default function Batimento({ navigation }) {
     let ativo = true;
 
     (async () => {
-      if (MODO_DEMONSTRACAO) {
-        if (ativo) {
-          setBpmAtual(DEMO_BATIMENTOS.atual);
-          setKcalQueimadas(347);
-          setKcalMeta(500);
-        }
-        return;
-      }
-
       const [bpm, kcal, meta] = await Promise.all([
         getBpmAtual(),
         getKcalQueimadas(),
@@ -109,9 +98,9 @@ export default function Batimento({ navigation }) {
     };
   }, []);
 
-  const demoSats = MODO_DEMONSTRACAO ? DEMO_BATIMENTOS : null;
-  const maxHistorico = demoSats && demoSats.historico.length > 0 ? Math.max(...demoSats.historico) : 1;
-  const minHistorico = demoSats && demoSats.historico.length > 0 ? Math.min(...demoSats.historico) : 1;
+  const demoSats = null;
+  const maxHistorico = 1;
+  const minHistorico = 1;
 
   const statusPrecisao =
     precision === null
@@ -134,7 +123,7 @@ export default function Batimento({ navigation }) {
           </View>
           <View>
             <Text style={styles.evolucaoTexto}>{t('comum.evolucaoDiaria')}</Text>
-            <Text style={styles.nomeUsuario}>{nomeUsuario}</Text>
+            <Text style={styles.nomeUsuario}>{nomeUsuario || '—'}</Text>
           </View>
         </View>
         <Text style={styles.logo}>
@@ -144,12 +133,6 @@ export default function Batimento({ navigation }) {
 
       {/* Conteúdo rolável */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {MODO_DEMONSTRACAO && (
-          <View style={styles.demoArea}>
-            <DemoTag />
-            <Text style={styles.avisoDemo}>{t('demo.aviso')}</Text>
-          </View>
-        )}
 
         {/* Círculo de BPM */}
         <View style={styles.circuloWrapper}>
@@ -182,50 +165,6 @@ export default function Batimento({ navigation }) {
           <View style={[styles.barraPreenchida, { width: `${percentualMeta ?? 0}%` }]} />
         </View>
       </View>
-
-      {demoSats && (
-        <>
-          <View style={styles.blocoEstatisticas}>
-            <View style={styles.estatisticaItem}>
-              <Text style={styles.estatisticaValor}>{bpmAtual ?? '—'}</Text>
-              <Text style={styles.estatisticaLabel}>{t('batimento.media')}</Text>
-            </View>
-            <View style={styles.estatisticaItem}>
-              <Text style={styles.estatisticaValor}>{demoSats.minimo}</Text>
-              <Text style={styles.estatisticaLabel}>{t('batimento.minimo')}</Text>
-            </View>
-            <View style={styles.estatisticaItem}>
-              <Text style={styles.estatisticaValor}>{demoSats.maximo}</Text>
-              <Text style={styles.estatisticaLabel}>{t('batimento.maximo')}</Text>
-            </View>
-          </View>
-
-          <View style={styles.blocoHistorico}>
-            <Text style={styles.historicoTitulo}>{t('batimento.historico')}</Text>
-            <View style={styles.barrasLinha}>
-              {demoSats.historico.map((valor, index) => {
-                const normalizado = (valor - minHistorico) / Math.max(1, maxHistorico - minHistorico);
-                return (
-                  <View key={`${index}-${valor}`} style={styles.barraColuna}>
-                    <View style={styles.barraTrilho}>
-                      <View
-                        style={[
-                          styles.barraPreenchidaHistorico,
-                          { height: `${Math.max(12, normalizado * 100)}%` },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.barraValor}>{valor}</Text>
-                  </View>
-                );
-              })}
-            </View>
-            <Text style={styles.historicoLegenda}>
-              {t('batimento.leituras').replace('{count}', String(demoSats.historico.length))}
-            </Text>
-          </View>
-        </>
-      )}
 
       <View style={styles.localizacaoBox}>
         <View style={styles.localizacaoHeader}>
@@ -435,60 +374,4 @@ const styles = StyleSheet.create({
     backgroundColor: VERDE,
     borderRadius: 3,
   },
-  demoArea: { alignItems: 'flex-start', marginTop: 18 },
-  avisoDemo: { color: '#888888', fontSize: 11, marginTop: 6, lineHeight: 15 },
-  blocoEstatisticas: {
-    flexDirection: 'row',
-    backgroundColor: CINZA_ESCURO,
-    borderRadius: 14,
-    marginTop: 18,
-    paddingVertical: 14,
-  },
-  estatisticaItem: { flex: 1, alignItems: 'center' },
-  estatisticaValor: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  estatisticaLabel: {
-    color: '#888888',
-    fontSize: 11,
-    marginTop: 3,
-    textTransform: 'uppercase',
-  },
-  blocoHistorico: {
-    backgroundColor: CINZA_ESCURO,
-    borderRadius: 14,
-    marginTop: 18,
-    padding: 16,
-  },
-  historicoTitulo: {
-    color: '#AAAAAA',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    marginBottom: 14,
-  },
-  barrasLinha: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: 5,
-  },
-  barraColuna: { flex: 1, alignItems: 'center' },
-  barraTrilho: {
-    width: '62%',
-    height: 70,
-    borderRadius: 6,
-    backgroundColor: '#2A2A2A',
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  barraPreenchidaHistorico: {
-    width: '100%',
-    borderRadius: 6,
-    backgroundColor: VERDE,
-  },
-  barraValor: { color: VERDE, fontSize: 9, fontWeight: '700', marginTop: 4 },
-  historicoLegenda: { color: '#888888', fontSize: 11, marginTop: 10 },
 });

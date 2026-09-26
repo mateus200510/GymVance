@@ -2,17 +2,19 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { getUserProfile } from './storage';
 
 const UserContext = createContext({
-  nomeUsuario: 'Usuário',
+  nomeUsuario: null,
   refreshUsuario: () => {},
 });
 
 export function UserProvider({ children }) {
-  const [nomeUsuario, setNomeUsuario] = useState('Usuário');
+  const [nomeUsuario, setNomeUsuario] = useState(null);
 
   const refreshUsuario = useCallback(async () => {
     const perfil = await getUserProfile();
     if (perfil?.nome) {
       setNomeUsuario(perfil.nome);
+    } else {
+      setNomeUsuario(null);
     }
   }, []);
 

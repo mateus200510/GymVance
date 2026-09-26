@@ -16,16 +16,9 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { getProgressPhotos, saveProgressPhoto, deleteProgressPhoto } from '../services/storage';
 
 import BottomNavBar from '../components/BottomNavBar';
-import DemoTag from '../components/DemoTag';
 import { useNomeUsuario } from '../services/useUserProfile';
 import { useIdioma } from '../services/idioma';
 import { getKcalMeta, getKcalQueimadas } from '../services/metricas';
-import {
-  MODO_DEMONSTRACAO,
-  DEMO_META_KCAL,
-  getDemoRefeicoes,
-  getDemoTotais,
-} from '../services/demo';
 
 function BarraProgresso({ percentual, cor = '#3DDC5C' }) {
   return (
@@ -35,7 +28,7 @@ function BarraProgresso({ percentual, cor = '#3DDC5C' }) {
   );
 }
 
-function TelaDashboard({ onAbrirGaleria, onAbrirCamera, onAbrirIA, fotoCapturada, nomeUsuario, kcalAtual, kcalMeta, refeicoes = [], macros = null, modoDemo = false }) {
+function TelaDashboard({ onAbrirGaleria, onAbrirCamera, onAbrirIA, fotoCapturada, nomeUsuario, kcalAtual, kcalMeta, refeicoes = [], macros = null }) {
   const { t } = useIdioma();
   const percentualKcal = kcalAtual !== null && kcalMeta
     ? Math.min(100, Math.round((kcalAtual / kcalMeta) * 100))
@@ -52,7 +45,7 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, onAbrirIA, fotoCapturada
         <View style={styles.perfilIcone}>
           <Feather name="user" size={20} color="#8E8E93" />
         </View>
-        <Text style={styles.headerNome}>{nomeUsuario}</Text>
+        <Text style={styles.headerNome}>{nomeUsuario || '—'}</Text>
         <View style={styles.headerDireita}>
           <Text style={styles.logo}>GymVance</Text>
           <TouchableOpacity onPress={onAbrirCamera} style={{ marginLeft: 12 }}>
@@ -69,13 +62,6 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, onAbrirIA, fotoCapturada
           <Image source={{ uri: fotoCapturada }} style={styles.fotoCapturada} />
         </View>
       ) : null}
-
-      {modoDemo && (
-        <View style={styles.demoArea}>
-          <DemoTag />
-          <Text style={styles.avisoDemo}>{t('demo.aviso')}</Text>
-        </View>
-      )}
 
       {/* Consumo diário */}
       <View style={styles.card}>
@@ -94,7 +80,7 @@ function TelaDashboard({ onAbrirGaleria, onAbrirCamera, onAbrirIA, fotoCapturada
         <Text style={styles.btnIAText}>{t('alimentacao.conversarComIA')}</Text>
       </TouchableOpacity>
 
-      {modoDemo && macros && (
+      {macros && (
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>{t('alimentacao.macros')}</Text>
           <View style={styles.macrosRow}>
@@ -189,12 +175,6 @@ export default function Alimentacao({ navigation }) {
   const [kcalMeta, setKcalMeta] = useState(null);
   const cameraRef = useRef(null);
 
-  const refeicoesDemo = MODO_DEMONSTRACAO
-    ? getDemoRefeicoes(idioma).map((r) => ({ ...r, nome: t(r.nomeKey) }))
-    : [];
-
-  const macrosDemo = MODO_DEMONSTRACAO ? getDemoTotais(idioma) : null;
-
   const carregarGaleria = async () => {
     const fotos = await getProgressPhotos();
     setFotosGaleria(fotos);
@@ -211,15 +191,6 @@ export default function Alimentacao({ navigation }) {
     let ativo = true;
 
     (async () => {
-      if (MODO_DEMONSTRACAO) {
-        const totais = getDemoTotais(idioma);
-        if (ativo) {
-          setKcalAtual(totais.kcal);
-          setKcalMeta(DEMO_META_KCAL);
-        }
-        return;
-      }
-
       const [atual, meta] = await Promise.all([
         getKcalQueimadas(),
         getKcalMeta(),
@@ -328,9 +299,8 @@ export default function Alimentacao({ navigation }) {
           nomeUsuario={nomeUsuario}
           kcalAtual={kcalAtual}
           kcalMeta={kcalMeta}
-          refeicoes={refeicoesDemo}
-          macros={macrosDemo}
-          modoDemo={MODO_DEMONSTRACAO}
+          refeicoes={[]}
+          macros={null}
         />
       ) : tela === 'galeria' ? (
         <TelaGaleria fotos={fotosGaleria} onVoltar={() => setTela('dashboard')} onExcluirFoto={excluirFoto} />
@@ -402,7 +372,7 @@ const styles = StyleSheet.create({
   macroLabel: { color: '#8E8E93', fontSize: 10, marginBottom: 4 },
   macroValor: { color: '#fff', fontSize: 13, fontWeight: '600', marginBottom: 6 },
   macroMeta: { color: '#8E8E93', fontWeight: '400' },
-  secaoHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+secaoHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   secaoTitulo: { color: '#fff', fontSize: 15, fontWeight: '600' },
   refeicaoItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 12, padding: 14, marginBottom: 10 },
   refeicaoNome: { color: '#fff', fontSize: 14, fontWeight: '600' },

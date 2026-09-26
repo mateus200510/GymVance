@@ -380,6 +380,14 @@ export async function saveUserProfile(profile) {
       next.email = String(profile.email).trim();
     }
 
+    if (profile?.foto !== undefined) {
+      if (profile.foto === null || profile.foto === '') {
+        delete next.foto;
+      } else {
+        next.foto = profile.foto;
+      }
+    }
+
     await AsyncStorage.setItem(USER_PROFILE_KEY, JSON.stringify(next));
     return next;
   } catch (error) {

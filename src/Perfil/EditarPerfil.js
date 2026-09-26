@@ -138,6 +138,8 @@ export default function EditarPerfil({ navigation }) {
   const removerFoto = async () => {
     await removerFotoPerfilLocal(foto);
     setFoto(null);
+    await saveUserProfile({ foto: null });
+    await refreshUsuario();
   };
 
   const parseMedida = (valor) => {

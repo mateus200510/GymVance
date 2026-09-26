@@ -8,6 +8,7 @@ import { useIsFocused } from '@react-navigation/native';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { saveWorkoutHistory, nomeExercicio, getActiveSession, saveActiveSession, clearActiveSession } from '../services/storage';
+import { TIPOS_SERIE, TIPO_PADRAO, criarSerie, tipoDe, infoTipo, numeroNormalDaSerie, rotuloDaSerie, normalizarSeries } from '../services/series';
 import { useIdioma } from '../services/idioma';
 
 const COLORS = {
@@ -19,46 +20,6 @@ const COLORS = {
   muted: '#8A8A8A',
   inputBg: '#2A2A2A',
 };
-
-// Tipos de série: o identificador interno é o `tipo`; o rótulo/idioma só afeta a apresentação.
-const TIPOS = [
-  { tipo: 'NORMAL', sigla: '#' },
-  { tipo: 'AQUECIMENTO', sigla: 'A' },
-  { tipo: 'PREPARATORIA', sigla: 'P' },
-  { tipo: 'RECONHECIMENTO', sigla: 'R' },
-  { tipo: 'BACK_OFF', sigla: 'B' },
-  { tipo: 'DROPSET', sigla: 'D' },
-  { tipo: 'FALHA', sigla: 'F' },
-];
-
-function tipoDe(serie) {
-  return serie?.tipo || 'NORMAL';
-}
-
-function infoTipo(tipo) {
-  return TIPOS.find((t) => t.tipo === tipo) || TIPOS[0];
-}
-
-// Número visual: somente as séries NORMAL contam, na ordem em que aparecem no exercício.
-function numeroNormalDaSerie(series, serie) {
-  let count = 0;
-  for (const s of series) {
-    if (s.id === serie.id) {
-      return count + 1;
-    }
-    if (tipoDe(s) === 'NORMAL') {
-      count += 1;
-    }
-  }
-  return count + 1;
-}
-
-function rotuloDaSerie(series, serie) {
-  if (tipoDe(serie) === 'NORMAL') {
-    return String(numeroNormalDaSerie(series, serie));
-  }
-  return infoTipo(tipoDe(serie)).sigla;
-}
 
 function tempoParaMs(tempo) {
   if (typeof tempo !== 'string' || !tempo.includes(':')) {
@@ -88,6 +49,7 @@ export default function SessaoAtiva({ navigation, route }) {
   const [carregado, setCarregado] = useState(false);
   const [mostrarRetomar, setMostrarRetomar] = useState(false);
   const [sessaoSalva, setSessaoSalva] = useState(null);
+  const [exerciciosSessao, setExerciciosSessao] = useState([]);
   const isFocused = useIsFocused();
   const acumuladoMs = useRef(0);
   const inicioPeriodo = useRef(null);
@@ -96,10 +58,15 @@ export default function SessaoAtiva({ navigation, route }) {
   const carregadoRef = useRef(false);
   const seriesRef = useRef([]);
   const tituloRef = useRef('');
+  const exerciciosRef = useRef([]);
 
   useEffect(() => {
     seriesRef.current = series;
   }, [series]);
+
+  useEffect(() => {
+    exerciciosRef.current = exerciciosSessao;
+  }, [exerciciosSessao]);
 
   useEffect(() => {
     tituloRef.current = tituloSessao;
@@ -111,6 +78,11 @@ export default function SessaoAtiva({ navigation, route }) {
 
   const serieEditando = series.find((s) => s.id === serieEditandoId) || null;
 
+  // Exercícios que ainda não têm nenhuma série: precisam continuar alcançáveis.
+  const exerciciosSemSerie = exerciciosSessao.filter(
+    (ex) => !series.some((s) => s.exercicioIdx === ex.exercicioIdx)
+  );
+
   const persistirSessao = async () => {
     if (!carregadoRef.current || !canPersistir.current) {
       return;
@@ -120,6 +92,7 @@ export default function SessaoAtiva({ navigation, route }) {
       await saveActiveSession({
         titulo: tituloRef.current,
         series: seriesRef.current,
+        exercicios: exerciciosRef.current,
         tempo: msParaTempo(acumuladoMs.current + decorrido),
         acumuladoMs: acumuladoMs.current,
         inicioPeriodo: inicioPeriodo.current,
@@ -150,19 +123,23 @@ export default function SessaoAtiva({ navigation, route }) {
       if (temParams) {
         await clearActiveSession();
         const seriesIniciais = [];
+        const exerciciosIniciais = [];
         let idCounter = 0;
         (route.params.exercicios || []).forEach((ex, exIdx) => {
-          (ex.series || []).forEach((s) => {
+          const nomeEx = nomeExercicio(ex, idioma);
+          exerciciosIniciais.push({ exercicioIdx: exIdx, nome: nomeEx });
+          (normalizarSeries(ex.series)).forEach((s) => {
             seriesIniciais.push({
               ...s,
               id: idCounter++,
-              exercicioNome: nomeExercicio(ex, idioma),
+              exercicioNome: nomeEx,
               exercicioIdx: exIdx,
             });
           });
         });
         if (!ativo) return;
         setSeries(seriesIniciais);
+        setExerciciosSessao(exerciciosIniciais);
         proximoId.current = idCounter;
         if (route?.params?.titulo) {
           setTituloSessao(String(route.params.titulo));
@@ -200,9 +177,21 @@ export default function SessaoAtiva({ navigation, route }) {
     if (!sessaoSalva) {
       return;
     }
-    const lista = Array.isArray(sessaoSalva.series) ? sessaoSalva.series : [];
+    const lista = normalizarSeries(sessaoSalva.series);
     setSeries(lista);
     aumentarIds(lista);
+
+    // Sessões antigas não tinham `exercicios`: deriva dos próprios séries.
+    let exercicios = Array.isArray(sessaoSalva.exercicios) ? sessaoSalva.exercicios : [];
+    if (exercicios.length === 0) {
+      for (const s of lista) {
+        if (s?.exercicioIdx === undefined) continue;
+        if (!exercicios.some((e) => e.exercicioIdx === s.exercicioIdx)) {
+          exercicios.push({ exercicioIdx: s.exercicioIdx, nome: s.exercicioNome });
+        }
+      }
+    }
+    setExerciciosSessao(exercicios);
     if (sessaoSalva.titulo) {
       setTituloSessao(String(sessaoSalva.titulo));
     }
@@ -218,6 +207,7 @@ export default function SessaoAtiva({ navigation, route }) {
     canPersistir.current = false;
     await clearActiveSession();
     setSeries([]);
+    setExerciciosSessao([]);
     setTituloSessao('');
     proximoId.current = 0;
     acumuladoMs.current = 0;
@@ -297,31 +287,31 @@ export default function SessaoAtiva({ navigation, route }) {
     );
   };
 
-  const adicionarSerie = () => {
-    const ultima = series.length > 0 ? series[series.length - 1] : null;
-    const temExercicio = ultima && (ultima.exercicioNome || ultima.exercicioIdx !== undefined);
-    if (!temExercicio) {
+  // Adiciona uma série ao exercício alvo. Sem alvo, mantém o comportamento
+  // anterior (último exercício da lista) para não alterar o botão existente.
+  const adicionarSerie = (exercicioIdxAlvo) => {
+    let alvo = exercicioIdxAlvo;
+
+    if (alvo === undefined || alvo === null) {
+      const ultimaSerie = seriesRef.current.length > 0 ? seriesRef.current[seriesRef.current.length - 1] : null;
+      alvo = ultimaSerie?.exercicioIdx;
+    }
+
+    const meta = exerciciosRef.current.find((e) => e.exercicioIdx === alvo);
+
+    if (!meta) {
       Alert.alert(t('sessaoAtiva.serieSemExercicio'), t('sessaoAtiva.serieSemExercicioMsg'));
       return;
     }
-    setSeries((prev) => {
-      const ultima = prev.length > 0 ? prev[prev.length - 1] : null;
-      return [
-        ...prev,
-        {
-          id: proximoId.current++,
-          tipo: 'NORMAL',
-          kg: '',
-          reps: '',
-          concluido: false,
-          falhou: false,
-          nota: '',
-          ...(ultima?.exercicioNome || ultima?.exercicioIdx !== undefined
-            ? { exercicioNome: ultima.exercicioNome, exercicioIdx: ultima.exercicioIdx }
-            : {}),
-        },
-      ];
-    });
+
+    setSeries((prev) => [
+      ...prev,
+      {
+        ...criarSerie(TIPO_PADRAO, proximoId.current++),
+        exercicioNome: meta.nome,
+        exercicioIdx: meta.exercicioIdx,
+      },
+    ]);
   };
 
   const alterarTipoSerie = (id, tipo) => {
@@ -445,10 +435,23 @@ const handleDescartarTreino = () => {
             <View style={{ width: 60 }} />
           </View>
 
-          {series.map((s) => (
+          {series.map((s, i) => {
+            const anterior = i > 0 ? series[i - 1] : null;
+            const novoGrupo = !anterior || anterior.exercicioIdx !== s.exercicioIdx;
+            return (
             <View key={s.id}>
-              {s.exercicioNome && (
-                <Text style={styles.exercicioNomeLinha}>{s.exercicioNome}</Text>
+              {s.exercicioNome && novoGrupo && (
+                <View style={styles.grupoExercicio}>
+                  <Text style={styles.exercicioNomeLinha}>{s.exercicioNome}</Text>
+                  <TouchableOpacity
+                    style={styles.btnAddSerieGrupo}
+                    onPress={() => adicionarSerie(s.exercicioIdx)}
+                    accessibilityLabel={t('sessaoAtiva.adicionarSerieExercicio')}
+                  >
+                    <Ionicons name="add" size={12} color={COLORS.green} />
+                    <Text style={styles.btnAddSerieGrupoText}>{t('sessaoAtiva.adicionarSerieExercicio')}</Text>
+                  </TouchableOpacity>
+                </View>
               )}
               <View style={styles.linhaSerie}>
                 <TouchableOpacity
@@ -498,10 +501,25 @@ const handleDescartarTreino = () => {
                 style={styles.notaInput}
               />
             </View>
+            );
+          })}
+
+          {exerciciosSemSerie.map((ex) => (
+            <View key={`vazio-${ex.exercicioIdx}`} style={styles.grupoExercicio}>
+              <Text style={styles.exercicioNomeLinha}>{ex.nome}</Text>
+              <TouchableOpacity
+                style={styles.btnAddSerieGrupo}
+                onPress={() => adicionarSerie(ex.exercicioIdx)}
+                accessibilityLabel={t('sessaoAtiva.adicionarSerieExercicio')}
+              >
+                <Ionicons name="add" size={12} color={COLORS.green} />
+                <Text style={styles.btnAddSerieGrupoText}>{t('sessaoAtiva.adicionarSerieExercicio')}</Text>
+              </TouchableOpacity>
+            </View>
           ))}
 
           <View style={styles.botoesCard}>
-            <TouchableOpacity style={styles.btnSerie} onPress={adicionarSerie}>
+            <TouchableOpacity style={styles.btnSerie} onPress={() => adicionarSerie()}>
               <Ionicons name="add" size={16} color={COLORS.green} />
               <Text style={styles.btnSerieText}>{t('sessaoAtiva.adicionarSerie')}</Text>
             </TouchableOpacity>
@@ -530,14 +548,14 @@ const handleDescartarTreino = () => {
           <View style={styles.menuSerie}>
             <Text style={styles.menuTitulo}>
               {serieEditando
-                ? (tipoDe(serieEditando) === 'NORMAL'
+                ? (tipoDe(serieEditando) === TIPO_PADRAO
                     ? `${t('sessaoAtiva.serieLabel')} ${numeroNormalDaSerie(series, serieEditando)}`
                     : t(`tipo.${tipoDe(serieEditando)}`))
                 : ''}
             </Text>
             <Text style={styles.menuSubtitulo}>{t('sessaoAtiva.menuSubtitulo')}</Text>
 
-            {TIPOS.map((item) => {
+            {TIPOS_SERIE.map((item) => {
               const ativo = serieEditando && tipoDe(serieEditando) === item.tipo;
               return (
                 <TouchableOpacity
@@ -545,7 +563,7 @@ const handleDescartarTreino = () => {
                   style={[styles.menuItem, ativo && styles.menuItemAtivo]}
                   onPress={() => serieEditando && alterarTipoSerie(serieEditando.id, item.tipo)}
                 >
-                  <View style={[styles.menuSigla, item.tipo === 'NORMAL' && styles.menuSiglaNormal]}>
+                  <View style={[styles.menuSigla, item.tipo === TIPO_PADRAO && styles.menuSiglaNormal]}>
                     <Text style={styles.menuSiglaText}>{item.sigla}</Text>
                   </View>
                   <Text style={[styles.menuItemLabel, ativo && styles.menuItemLabelAtivo]}>{t(`tipo.${item.tipo}`)}</Text>
@@ -616,6 +634,9 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   exercicioNome: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   exercicioNomeLinha: { color: COLORS.green, fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 4 },
+  grupoExercicio: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  btnAddSerieGrupo: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.inputBg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  btnAddSerieGrupoText: { color: COLORS.green, fontSize: 11, fontWeight: '600' },
   tabelaHeader: { flexDirection: 'row', marginBottom: 6 },
   colLabel: { color: COLORS.muted, fontSize: 12 },
   linhaSerie: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
