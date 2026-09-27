@@ -45,56 +45,27 @@ import Calorias from './src/Relogio/calorias';
 import Genero from './src/genero/genero';
 import Ranking from './src/ranking/ranking';
 import { getSession, getOnboardingComplete, migrarUsuarioLegado, getUserProfile } from './src/services/storage';
+import { resolverRotaInicial } from './src/services/inicio';
 import { IdiomaProvider } from './src/services/idioma';
 import { UserProvider } from './src/services/UserContext';
+import { DialogoProvider } from './src/components/Dialogo';
 
 const Stack = createNativeStackNavigator();
 
 function SplashScreen({ navigation }) {
   useEffect(() => {
+    let vivo = true;
     const timer = setTimeout(async () => {
-      let destino = 'Cadastro';
-
-      try {
-        const migracao = await migrarUsuarioLegado();
-        const sessao = await getSession();
-        const onboarding = await getOnboardingComplete();
-
-        if (sessao) {
-          if (onboarding) {
-            destino = 'TreinoHub';
-          } else {
-            const perfil = await getUserProfile();
-            if (!perfil?.peso) {
-              destino = 'Peso';
-            } else if (!perfil?.altura) {
-              destino = 'Altura';
-            } else if (!perfil?.genero || !perfil?.dataNascimento) {
-              destino = 'Genero';
-            } else {
-              destino = 'TreinoHub';
-            }
-          }
-        } else if (migracao.migrado) {
-          const perfil = await getUserProfile();
-          if (!perfil?.peso) {
-            destino = 'Peso';
-          } else if (!perfil?.altura) {
-            destino = 'Altura';
-          } else if (!perfil?.genero || !perfil?.dataNascimento) {
-            destino = 'Genero';
-          } else {
-            destino = 'TreinoHub';
-          }
-        }
-      } catch (error) {
-        console.warn('Erro ao restaurar sessão:', error);
+      const destino = await resolverRotaInicial();
+      if (vivo) {
+        navigation.replace(destino);
       }
-
-      navigation.replace(destino);
     }, 0);
 
-    return () => clearTimeout(timer);
+    return () => {
+      vivo = false;
+      clearTimeout(timer);
+    };
   }, [navigation]);
 
   return (
@@ -113,14 +84,15 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style="light" />
       <IdiomaProvider>
-        <UserProvider>
-          <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="Splash"
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
+        <DialogoProvider>
+          <UserProvider>
+            <NavigationContainer>
+              <Stack.Navigator
+                initialRouteName="Splash"
+                screenOptions={{
+                  headerShown: false,
+                }}
+              >
 
         {/* TELA INICIAL */}
         <Stack.Screen
@@ -261,8 +233,9 @@ export default function App() {
         />
 
         </Stack.Navigator>
-      </NavigationContainer>
-      </UserProvider>
+            </NavigationContainer>
+          </UserProvider>
+        </DialogoProvider>
       </IdiomaProvider>
     </SafeAreaProvider>
   );

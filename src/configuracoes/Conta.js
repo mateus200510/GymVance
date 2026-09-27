@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { useIdioma } from '../services/idioma';
 import { useUsuario } from '../services/UserContext';
 import { getUserProfile, saveUserProfile, authenticateUser, getSession, saveAccount } from '../services/storage';
@@ -20,6 +20,7 @@ const VERDE = '#3DDC5C';
 
 export default function Conta({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const { refreshUsuario } = useUsuario();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -41,21 +42,21 @@ export default function Conta({ navigation }) {
 
   const salvarPerfil = async () => {
     if (!nome.trim()) {
-      Alert.alert(t('comum.erro'), t('genero.erroNomeMsg'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('genero.erroNomeMsg') });
       return;
     }
     if (!email.includes('@') || !email.includes('.')) {
-      Alert.alert(t('comum.erro'), t('cadastro.erroEmail'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('cadastro.erroEmail') });
       return;
     }
     setCarregando(true);
     try {
       await saveUserProfile({ nome: nome.trim(), email: email.trim() });
       await refreshUsuario();
-      Alert.alert(t('conta.sucesso'));
+      dialogo.sucessoToast(t('conta.sucesso'));
     } catch (error) {
       console.warn('Erro ao salvar perfil:', error);
-      Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('comum.erroSalvarDados') });
     } finally {
       setCarregando(false);
     }
@@ -63,27 +64,27 @@ export default function Conta({ navigation }) {
 
   const alterarSenha = async () => {
     if (!senhaAtual || !novaSenha || !confirmarNovaSenha) {
-      Alert.alert(t('comum.erro'), t('conta.erroSenhaCurta'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('conta.erroSenhaCurta') });
       return;
     }
     if (novaSenha.length < 6) {
-      Alert.alert(t('comum.erro'), t('conta.erroSenhaCurta'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('conta.erroSenhaCurta') });
       return;
     }
     if (novaSenha !== confirmarNovaSenha) {
-      Alert.alert(t('comum.erro'), t('conta.erroSenhasDiferentes'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('conta.erroSenhasDiferentes') });
       return;
     }
 
     const sessao = await getSession();
     if (!sessao?.email) {
-      Alert.alert(t('comum.erro'), t('conta.erroSenhaAtual'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('conta.erroSenhaAtual') });
       return;
     }
 
     const autenticado = await authenticateUser(sessao.email, senhaAtual);
     if (!autenticado) {
-      Alert.alert(t('comum.erro'), t('conta.erroSenhaAtual'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('conta.erroSenhaAtual') });
       return;
     }
 
@@ -93,10 +94,10 @@ export default function Conta({ navigation }) {
       setSenhaAtual('');
       setNovaSenha('');
       setConfirmarNovaSenha('');
-      Alert.alert(t('conta.sucesso'));
+      dialogo.sucessoToast(t('conta.sucesso'));
     } catch (error) {
       console.warn('Erro ao alterar senha:', error);
-      Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('comum.erroSalvarDados') });
     } finally {
       setCarregando(false);
     }

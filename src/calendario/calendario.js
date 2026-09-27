@@ -11,17 +11,19 @@ const VERDE = '#3DDC5C';
 const BG = '#121212';
 const CARD = '#1A1A1A';
 const MUTED = '#8E8E93';
-const MS_DIA = 24 * 60 * 60 * 1000;
+
+function diaInicio(data) {
+  return new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+}
+
+function diaAnterior(chave) {
+  const d = new Date(chave);
+  return diaInicio(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
+}
 
 // Semana começa no domingo (padrão usado pelo projeto: mesmo início do resumo
 // semanal do TreinoHub e do calendário existente do Perfil).
 const DIAS_SEMANA = 7;
-
-// Data civil no fuso local, ignorando hora/minuto (evita deslocamentos de
-// timezone/UTC e o bug de datas já corrigido no projeto).
-function diaInicio(data) {
-  return new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
-}
 
 export default function CalendarioCompleto({ navigation }) {
   const { t, numero } = useIdioma();
@@ -95,7 +97,7 @@ export default function CalendarioCompleto({ navigation }) {
     .map(Number)
     .sort((a, b) => a - b)
     .forEach((chave) => {
-      if (anterior !== null && chave - anterior === MS_DIA) {
+      if (anterior !== null && chave === diaAnterior(anterior)) {
         sequenciaAtual += 1;
       } else {
         sequenciaAtual = 1;
@@ -161,15 +163,15 @@ export default function CalendarioCompleto({ navigation }) {
           <View style={styles.chips}>
             <View style={styles.chip}>
               <Text style={styles.chipValor}>{treinosNoMes}</Text>
-              <Text style={styles.chipLabel}>{t('calendario.treinosMes').replace('{treinos}', String(treinosNoMes))}</Text>
+              <Text style={styles.chipLabel}>{t('calendario.resumoTreinosMes')}</Text>
             </View>
             <View style={styles.chip}>
               <Text style={styles.chipValor}>{diasTreinados}</Text>
-              <Text style={styles.chipLabel}>{t('calendario.diasTreinados').replace('{count}', String(diasTreinados))}</Text>
+              <Text style={styles.chipLabel}>{t('calendario.resumoDiasTreinados')}</Text>
             </View>
             <View style={styles.chip}>
               <Text style={styles.chipValor}>{melhorSequencia}</Text>
-              <Text style={styles.chipLabel}>{t('calendario.melhorSequencia').replace('{count}', String(melhorSequencia))}</Text>
+              <Text style={styles.chipLabel}>{t('calendario.resumoMelhorSequencia')}</Text>
             </View>
           </View>
 

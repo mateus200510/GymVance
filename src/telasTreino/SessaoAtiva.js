@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, AppState, Modal,
+  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 
 import BottomNavBar from '../components/BottomNavBar';
+import MenuSerie from '../components/MenuSerie';
+import { useDialogo } from '../components/Dialogo';
 import { saveWorkoutHistory, nomeExercicio, getActiveSession, saveActiveSession, clearActiveSession } from '../services/storage';
-import { TIPOS_SERIE, TIPO_PADRAO, criarSerie, tipoDe, infoTipo, numeroNormalDaSerie, rotuloDaSerie, normalizarSeries } from '../services/series';
+import { TIPO_PADRAO, criarSerie, tipoDe, numeroNormalDaSerie, rotuloDaSerie, normalizarSeries } from '../services/series';
 import { useIdioma } from '../services/idioma';
 
 const COLORS = {
@@ -42,6 +44,7 @@ function msParaTempo(total) {
 
 export default function SessaoAtiva({ navigation, route }) {
   const { t, idioma } = useIdioma();
+  const dialogo = useDialogo();
   const [series, setSeries] = useState([]);
   const [tempo, setTempo] = useState('00:00:00');
   const [serieEditandoId, setSerieEditandoId] = useState(null);
@@ -300,7 +303,11 @@ export default function SessaoAtiva({ navigation, route }) {
     const meta = exerciciosRef.current.find((e) => e.exercicioIdx === alvo);
 
     if (!meta) {
-      Alert.alert(t('sessaoAtiva.serieSemExercicio'), t('sessaoAtiva.serieSemExercicioMsg'));
+      dialogo.toast({
+        tipo: 'aviso',
+        titulo: t('sessaoAtiva.serieSemExercicio'),
+        mensagem: t('sessaoAtiva.serieSemExercicioMsg'),
+      });
       return;
     }
 
@@ -338,7 +345,11 @@ export default function SessaoAtiva({ navigation, route }) {
 
   const handleConcluir = async () => {
     if (series.length === 0) {
-      Alert.alert(t('sessaoAtiva.treinoVazio'), t('sessaoAtiva.treinoVazioMsg'));
+      dialogo.toast({
+        tipo: 'aviso',
+        titulo: t('sessaoAtiva.treinoVazio'),
+        mensagem: t('sessaoAtiva.treinoVazioMsg'),
+      });
       return;
     }
 
@@ -353,31 +364,31 @@ export default function SessaoAtiva({ navigation, route }) {
       canPersistir.current = false;
       await clearActiveSession();
       await saveWorkoutHistory(treino);
-      Alert.alert(t('sessaoAtiva.treinoConcluido'), t('sessaoAtiva.salvoHistorico'));
+      dialogo.sucesso({
+        titulo: t('sessaoAtiva.treinoConcluido'),
+        mensagem: t('sessaoAtiva.salvoHistorico'),
+      });
       navigation?.replace('TreinoHub');
     } catch (error) {
       console.warn('Erro ao salvar treino:', error);
-      Alert.alert(t('comum.erro'), t('sessaoAtiva.erroSalvar'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('sessaoAtiva.erroSalvar') });
     }
   };
 
-const handleDescartarTreino = () => {
-    Alert.alert(
-      t('sessaoAtiva.descartarTreino'),
-      t('sessaoAtiva.confirmarDescartar'),
-      [
-        { text: t('sessaoAtiva.cancelar'), style: 'cancel' },
-        {
-          text: t('comum.descartar'),
-          style: 'destructive',
-          onPress: async () => {
-            canPersistir.current = false;
-            await clearActiveSession();
-            navigation?.goBack();
-          },
-        },
-      ]
-    );
+  const handleDescartarTreino = () => {
+    dialogo.confirmar({
+      tipo: 'destrutivo',
+      titulo: t('sessaoAtiva.descartarTreino'),
+      mensagem: t('sessaoAtiva.confirmarDescartar'),
+      rotuloConfirmar: t('comum.descartar'),
+      rotuloCancelar: t('sessaoAtiva.cancelar'),
+      destrutivo: true,
+      onConfirmar: async () => {
+        canPersistir.current = false;
+        await clearActiveSession();
+        navigation?.goBack();
+      },
+    });
   };
 
   const handleVoltar = () => {
@@ -390,6 +401,25 @@ const handleDescartarTreino = () => {
 
     handleDescartarTreino();
   };
+
+  // A retomada é uma decisão obrigatória: só os botões do diálogo fecham.
+  useEffect(() => {
+    if (!mostrarRetomar) {
+      return;
+    }
+
+    dialogo.confirmar({
+      titulo: t('sessaoAtiva.retomarTitulo'),
+      mensagem: t('sessaoAtiva.retomarMsg'),
+      rotuloConfirmar: t('sessaoAtiva.continuarTreino'),
+      rotuloCancelar: t('sessaoAtiva.comecarNovo'),
+      cancelavel: false,
+      fecharAoTocarFora: false,
+      empilhar: true,
+      onConfirmar: restaurarSessao,
+      onCancelar: comecarNovo,
+    });
+  }, [mostrarRetomar]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -534,83 +564,20 @@ const handleDescartarTreino = () => {
         </TouchableOpacity>
       </View>
 
-      <Modal
+      <MenuSerie
         visible={serieEditando !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSerieEditandoId(null)}
-      >
-        <TouchableOpacity
-          style={styles.modalFundo}
-          activeOpacity={1}
-          onPress={() => setSerieEditandoId(null)}
-        >
-          <View style={styles.menuSerie}>
-            <Text style={styles.menuTitulo}>
-              {serieEditando
-                ? (tipoDe(serieEditando) === TIPO_PADRAO
-                    ? `${t('sessaoAtiva.serieLabel')} ${numeroNormalDaSerie(series, serieEditando)}`
-                    : t(`tipo.${tipoDe(serieEditando)}`))
-                : ''}
-            </Text>
-            <Text style={styles.menuSubtitulo}>{t('sessaoAtiva.menuSubtitulo')}</Text>
-
-            {TIPOS_SERIE.map((item) => {
-              const ativo = serieEditando && tipoDe(serieEditando) === item.tipo;
-              return (
-                <TouchableOpacity
-                  key={item.tipo}
-                  style={[styles.menuItem, ativo && styles.menuItemAtivo]}
-                  onPress={() => serieEditando && alterarTipoSerie(serieEditando.id, item.tipo)}
-                >
-                  <View style={[styles.menuSigla, item.tipo === TIPO_PADRAO && styles.menuSiglaNormal]}>
-                    <Text style={styles.menuSiglaText}>{item.sigla}</Text>
-                  </View>
-                  <Text style={[styles.menuItemLabel, ativo && styles.menuItemLabelAtivo]}>{t(`tipo.${item.tipo}`)}</Text>
-                  {ativo && <Ionicons name="checkmark" size={16} color={COLORS.green} />}
-                </TouchableOpacity>
-              );
-            })}
-
-            <View style={styles.menuDivisor} />
-
-            <TouchableOpacity
-              style={styles.menuRemover}
-              onPress={() => serieEditando && removerSerie(serieEditando.id)}
-            >
-              <Ionicons name="trash-outline" size={16} color={COLORS.red} />
-              <Text style={styles.menuRemoverText}>{t('sessaoAtiva.removerSerie')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuCancelar} onPress={() => setSerieEditandoId(null)}>
-              <Text style={styles.menuCancelarText}>{t('sessaoAtiva.cancelar')}</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal
-        visible={mostrarRetomar}
-        transparent
-        animationType="fade"
-        onRequestClose={() => { /* decisão obrigatória via botões */ }}
-      >
-        <View style={styles.retomarFundo}>
-          <View style={styles.retomarCard}>
-            <Ionicons name="time-outline" size={32} color={COLORS.green} />
-            <Text style={styles.retomarTitulo}>{t('sessaoAtiva.retomarTitulo')}</Text>
-            <Text style={styles.retomarTexto}>{t('sessaoAtiva.retomarMsg')}</Text>
-
-            <TouchableOpacity style={styles.retomarBtnPrimario} onPress={restaurarSessao}>
-              <Text style={styles.retomarBtnPrimarioText}>{t('sessaoAtiva.continuarTreino')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.retomarBtnSecundario} onPress={comecarNovo}>
-              <Text style={styles.retomarBtnSecundarioText}>{t('sessaoAtiva.comecarNovo')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        titulo={
+          serieEditando
+            ? (tipoDe(serieEditando) === TIPO_PADRAO
+                ? `${t('sessaoAtiva.serieLabel')} ${numeroNormalDaSerie(series, serieEditando)}`
+                : t(`tipo.${tipoDe(serieEditando)}`))
+            : ''
+        }
+        tipoAtual={serieEditando ? tipoDe(serieEditando) : TIPO_PADRAO}
+        onClose={() => setSerieEditandoId(null)}
+        onSelecionarTipo={(tipo) => serieEditando && alterarTipoSerie(serieEditando.id, tipo)}
+        onRemover={() => serieEditando && removerSerie(serieEditando.id)}
+      />
 
       <BottomNavBar activeTab="treino" />
     </SafeAreaView>
@@ -655,28 +622,4 @@ const styles = StyleSheet.create({
   btnDescartarText: { color: COLORS.muted, fontWeight: '600', fontSize: 13 },
   rodapeAcoes: { gap: 10, marginBottom: 8 },
   btnDescartarTreino: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.card, paddingVertical: 12, borderRadius: 12 },
-  modalFundo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
-  retomarFundo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  retomarCard: { backgroundColor: '#1A1A1A', borderRadius: 18, padding: 24, width: '100%', alignItems: 'center' },
-  retomarTitulo: { color: COLORS.text, fontSize: 18, fontWeight: '700', marginTop: 12 },
-  retomarTexto: { color: COLORS.muted, fontSize: 13, textAlign: 'center', marginTop: 8, marginBottom: 20, lineHeight: 19 },
-  retomarBtnPrimario: { backgroundColor: COLORS.green, borderRadius: 12, paddingVertical: 14, width: '100%', alignItems: 'center' },
-  retomarBtnPrimarioText: { color: '#000', fontWeight: '700' },
-  retomarBtnSecundario: { marginTop: 10, borderRadius: 12, paddingVertical: 12, width: '100%', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
-  retomarBtnSecundarioText: { color: COLORS.text, fontWeight: '600' },
-  menuSerie: { backgroundColor: '#1A1A1A', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 28 },
-  menuTitulo: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
-  menuSubtitulo: { color: COLORS.muted, fontSize: 12, marginTop: 2, marginBottom: 12 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10 },
-  menuItemAtivo: { backgroundColor: COLORS.inputBg },
-  menuItemLabel: { color: COLORS.text, fontSize: 14, flex: 1 },
-  menuItemLabelAtivo: { fontWeight: '700' },
-  menuSigla: { width: 24, height: 24, borderRadius: 6, backgroundColor: COLORS.inputBg, alignItems: 'center', justifyContent: 'center' },
-  menuSiglaNormal: { backgroundColor: COLORS.card },
-  menuSiglaText: { color: COLORS.text, fontWeight: '700', fontSize: 12 },
-  menuDivisor: { height: StyleSheet.hairlineWidth, backgroundColor: '#333', marginVertical: 8 },
-  menuRemover: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 8 },
-  menuRemoverText: { color: COLORS.red, fontSize: 14, fontWeight: '700' },
-  menuCancelar: { marginTop: 6, backgroundColor: COLORS.card, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  menuCancelarText: { color: COLORS.text, fontWeight: '700' },
 });

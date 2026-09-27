@@ -8,14 +8,14 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  Alert,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useDialogo } from '../components/Dialogo';
 import { useIdioma } from '../services/idioma';
-import { saveAccount, createSession } from '../services/storage';
+import { accountExists, saveAccount, createSession } from '../services/storage';
 
 const COLORS = {
   bg: '#121212',
@@ -29,6 +29,7 @@ const COLORS = {
 
 export default function Cadastro({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
@@ -41,6 +42,13 @@ export default function Cadastro({ navigation }) {
   const validarCadastro = async () => {
     if (!email.includes('@') || !email.includes('.')) {
       setErro(t('cadastro.erroEmail'));
+      return;
+    }
+
+    // Sem esta checagem, `saveAccount` sobrescreveria a senha de uma conta já
+    // existente e o cadastro passaria a valer para o e-mail de outra pessoa.
+    if (await accountExists(email)) {
+      setErro(t('cadastro.erroEmailExistente'));
       return;
     }
 
@@ -223,10 +231,10 @@ export default function Cadastro({ navigation }) {
           <TouchableOpacity
             style={styles.providerButton}
             onPress={() =>
-              Alert.alert(
-                t('auth.googleIndisponivel'),
-                t('auth.googleMsg')
-              )
+              dialogo.informacao({
+                titulo: t('auth.googleIndisponivel'),
+                mensagem: t('auth.googleMsg'),
+              })
             }
             accessibilityRole="button"
             accessibilityLabel={t('auth.google')}
@@ -242,10 +250,10 @@ export default function Cadastro({ navigation }) {
           <TouchableOpacity
             style={styles.providerButton}
             onPress={() =>
-              Alert.alert(
-                t('auth.facebookIndisponivel'),
-                t('auth.facebookMsg')
-              )
+              dialogo.informacao({
+                titulo: t('auth.facebookIndisponivel'),
+                mensagem: t('auth.facebookMsg'),
+              })
             }
             accessibilityRole="button"
             accessibilityLabel={t('auth.facebook')}
@@ -261,10 +269,10 @@ export default function Cadastro({ navigation }) {
           <TouchableOpacity
             style={styles.providerButton}
             onPress={() =>
-              Alert.alert(
-                t('auth.appleIndisponivel'),
-                t('auth.appleMsg')
-              )
+              dialogo.informacao({
+                titulo: t('auth.appleIndisponivel'),
+                mensagem: t('auth.appleMsg'),
+              })
             }
             accessibilityRole="button"
             accessibilityLabel={t('auth.apple')}
@@ -283,10 +291,10 @@ export default function Cadastro({ navigation }) {
           <TouchableOpacity
             style={styles.providerButton}
             onPress={() =>
-              Alert.alert(
-                t('auth.email'),
-                t('auth.emailMsg')
-              )
+              dialogo.informacao({
+                titulo: t('auth.email'),
+                mensagem: t('auth.emailMsg'),
+              })
             }
             accessibilityRole="button"
             accessibilityLabel={t('auth.email')}
@@ -302,10 +310,10 @@ export default function Cadastro({ navigation }) {
           <TouchableOpacity
             style={styles.providerButton}
             onPress={() =>
-              Alert.alert(
-                t('auth.telefoneIndisponivel'),
-                t('auth.telefoneMsg')
-              )
+              dialogo.informacao({
+                titulo: t('auth.telefoneIndisponivel'),
+                mensagem: t('auth.telefoneMsg'),
+              })
             }
             accessibilityRole="button"
             accessibilityLabel={t('auth.telefone')}

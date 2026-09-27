@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Image,
   Modal,
@@ -16,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { getUserProfile, saveUserProfile, formatarDataNascimento, normalizarDataNascimento, calcularIdade } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 import { useUsuario } from '../services/UserContext';
@@ -61,6 +61,7 @@ function validarDataNascimento(value) {
 
 export default function EditarPerfil({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const { refreshUsuario } = useUsuario();
   const [nome, setNome] = useState('');
   const [bio, setBio] = useState('');
@@ -113,33 +114,47 @@ export default function EditarPerfil({ navigation }) {
       }
 
       if (resultado.status === 'bloqueada') {
-        Alert.alert(
-          t('perfil.galeriaBloqueada'),
-          t('perfil.galeriaBloqueadaMsg'),
-          [
-            { text: t('comum.cancelar'), style: 'cancel' },
-            { text: t('perfil.abrirConfiguracoes'), onPress: () => Linking.openSettings() },
-          ]
-        );
+        dialogo.informacao({
+          titulo: t('perfil.galeriaBloqueada'),
+          mensagem: t('perfil.galeriaBloqueadaMsg'),
+          rotuloConfirmar: t('perfil.abrirConfiguracoes'),
+          rotuloCancelar: t('comum.cancelar'),
+          onConfirmar: () => Linking.openSettings(),
+        });
         return;
       }
 
       if (resultado.status === 'negada') {
-        Alert.alert(t('perfil.permissaoNecessaria'), t('perfil.fotosPermissaoMsg'));
+        dialogo.informacao({
+          titulo: t('perfil.permissaoNecessaria'),
+          mensagem: t('perfil.fotosPermissaoMsg'),
+        });
       }
     } catch (error) {
       console.warn('Erro ao adicionar foto:', error);
-      Alert.alert(t('comum.erro'), t('perfil.erroAdicionarFoto'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('perfil.erroAdicionarFoto') });
     } finally {
       setCarregando(false);
     }
   };
 
-  const removerFoto = async () => {
-    await removerFotoPerfilLocal(foto);
-    setFoto(null);
-    await saveUserProfile({ foto: null });
-    await refreshUsuario();
+  // Remover foto é destrutivo: pede confirmação antes de apagar o arquivo local.
+  const removerFoto = () => {
+    dialogo.confirmar({
+      tipo: 'destrutivo',
+      titulo: t('editarPerfil.removerFoto'),
+      mensagem: t('perfil.confirmarRemoverFoto'),
+      rotuloConfirmar: t('editarPerfil.removerFoto'),
+      rotuloCancelar: t('comum.cancelar'),
+      destrutivo: true,
+      onConfirmar: async () => {
+        await removerFotoPerfilLocal(foto);
+        setFoto(null);
+        await saveUserProfile({ foto: null });
+        await refreshUsuario();
+        dialogo.sucessoToast(t('perfil.fotoRemovida'));
+      },
+    });
   };
 
   const parseMedida = (valor) => {
@@ -152,13 +167,13 @@ export default function EditarPerfil({ navigation }) {
 
   const salvar = async () => {
     if (!nome.trim()) {
-      Alert.alert(t('comum.erro'), t('genero.erroNomeMsg'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('genero.erroNomeMsg') });
       return;
     }
 
     const dataIso = validarDataNascimento(dataNascimento);
     if (!dataIso && dataNascimento) {
-      Alert.alert(t('comum.erro'), t('genero.erroDataMsg'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('genero.erroDataMsg') });
       return;
     }
 
@@ -175,11 +190,11 @@ export default function EditarPerfil({ navigation }) {
         peito: parseMedida(peito),
       });
       await refreshUsuario();
-      Alert.alert(t('editarPerfil.salvar'));
+      dialogo.sucessoToast(t('perfil.salvoComSucesso'));
       navigation?.goBack();
     } catch (error) {
       console.warn('Erro ao salvar perfil:', error);
-      Alert.alert(t('comum.erro'), t('perfil.erroSalvarPerfil'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('perfil.erroSalvarPerfil') });
     } finally {
       setSalvando(false);
     }

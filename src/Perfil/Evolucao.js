@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Image,
   Modal,
-  Alert,
   Linking,
   ActivityIndicator,
 } from 'react-native';
@@ -17,6 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { getProgressPhotos, saveProgressPhoto, setProgressPhotos, getUserProfile, formatarPeso } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
@@ -81,6 +81,7 @@ function CardFoto({ label, foto, onVerFoto }) {
 
 export default function Evolucao({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const [fotos, setFotos] = useState([]);
   const [nomeUsuario, setNomeUsuario] = useState('');
   const [medidasPerfil, setMedidasPerfil] = useState({});
@@ -149,16 +150,18 @@ export default function Evolucao({ navigation }) {
 
       if (!permissao.granted) {
         if (permissao.canAskAgain === false) {
-          Alert.alert(
-            t('perfil.galeriaBloqueada'),
-            t('perfil.galeriaBloqueadaMsg'),
-            [
-              { text: t('comum.cancelar'), style: 'cancel' },
-              { text: t('perfil.abrirConfiguracoes'), onPress: () => Linking.openSettings() },
-            ]
-          );
+          dialogo.informacao({
+            titulo: t('perfil.galeriaBloqueada'),
+            mensagem: t('perfil.galeriaBloqueadaMsg'),
+            rotuloConfirmar: t('perfil.abrirConfiguracoes'),
+            rotuloCancelar: t('comum.cancelar'),
+            onConfirmar: () => Linking.openSettings(),
+          });
         } else {
-          Alert.alert(t('perfil.permissaoNecessaria'), t('perfil.fotosPermissaoMsg'));
+          dialogo.informacao({
+            titulo: t('perfil.permissaoNecessaria'),
+            mensagem: t('perfil.fotosPermissaoMsg'),
+          });
         }
         return;
       }
@@ -179,7 +182,7 @@ export default function Evolucao({ navigation }) {
       await carregarFotos();
     } catch (error) {
       console.warn('Erro ao adicionar foto:', error);
-      Alert.alert(t('comum.erro'), t('perfil.erroAdicionarFoto'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('perfil.erroAdicionarFoto') });
     } finally {
       setAdicionando(false);
     }

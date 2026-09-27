@@ -8,7 +8,6 @@ import {
   ScrollView,
   FlatList,
   Modal,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { useIdioma, chaveTraducaoGrupoMuscular, chaveTraducaoEquipamento } from '../services/idioma';
 import { getTodosExercicios, buscarExercicios, getExerciciosPorCategoria, CATEGORIAS_EXERCICIOS, GRUPOS_MUSCULARES, saveExercicioCustom, updateExercicioCustom, deleteExercicioCustom, nomeExercicio } from '../services/storage';
 
@@ -39,6 +39,7 @@ const CATEGORIA_TRADUCAO_MAP = {
 
 export default function CatalogoExercicios({ navigation, route }) {
   const { t, idioma } = useIdioma();
+  const dialogo = useDialogo();
   const [exercicios, setExercicios] = useState([]);
   const [filtrados, setFiltrados] = useState([]);
   const [busca, setBusca] = useState('');
@@ -119,35 +120,32 @@ export default function CatalogoExercicios({ navigation, route }) {
   };
 
   const confirmarExclusao = (exercicio) => {
-    Alert.alert(
-      t('exercicios.excluirTitulo'),
-      t('exercicios.excluirMsg'),
-      [
-        { text: t('comum.cancelar'), style: 'cancel' },
-        {
-          text: t('exercicios.excluir'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteExercicioCustom(exercicio.id);
-              carregarExercicios();
-            } catch (error) {
-              console.warn('Erro ao excluir exercício personalizado:', error);
-              Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
-            }
-          },
-        },
-      ]
-    );
+    dialogo.confirmar({
+      tipo: 'destrutivo',
+      titulo: t('exercicios.excluirTitulo'),
+      mensagem: t('exercicios.excluirMsg'),
+      rotuloConfirmar: t('exercicios.excluir'),
+      rotuloCancelar: t('comum.cancelar'),
+      destrutivo: true,
+      onConfirmar: async () => {
+        try {
+          await deleteExercicioCustom(exercicio.id);
+          carregarExercicios();
+        } catch (error) {
+          console.warn('Erro ao excluir exercício personalizado:', error);
+          dialogo.erro({ titulo: t('comum.erro'), mensagem: t('comum.erroSalvarDados') });
+        }
+      },
+    });
   };
 
   const salvarCustom = async () => {
     if (!customNome.trim()) {
-      Alert.alert(t('comum.erro'), t('editarPerfil.placeholderNome'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('editarPerfil.placeholderNome') });
       return;
     }
     if (!customGrupo) {
-      Alert.alert(t('comum.erro'), t('exercicios.selecionarGrupo'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('exercicios.selecionarGrupo') });
       return;
     }
     try {
@@ -170,7 +168,7 @@ export default function CatalogoExercicios({ navigation, route }) {
       carregarExercicios();
     } catch (error) {
       console.warn('Erro ao salvar exercício personalizado:', error);
-      Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('comum.erroSalvarDados') });
     }
   };
 

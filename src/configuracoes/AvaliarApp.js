@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Linking,
   ScrollView,
 } from 'react-native';
@@ -12,12 +11,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { useIdioma } from '../services/idioma';
 
 const VERDE = '#3DDC5C';
 
 export default function AvaliarApp({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
 
   const abrirPlayStore = async () => {
     try {
@@ -26,13 +27,13 @@ export default function AvaliarApp({ navigation }) {
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);
-        Alert.alert(t('avaliar.obrigado'));
+        dialogo.sucessoToast(t('avaliar.obrigado'));
       } else {
-        Alert.alert(t('avaliar.erro'));
+        dialogo.erro({ mensagem: t('avaliar.erro') });
       }
     } catch (error) {
       console.warn('Erro ao abrir Play Store:', error);
-      Alert.alert(t('avaliar.erro'));
+      dialogo.erro({ mensagem: t('avaliar.erro') });
     }
   };
 

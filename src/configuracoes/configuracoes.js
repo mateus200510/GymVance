@@ -5,12 +5,12 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { getSelectedPlan, logout } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
@@ -29,6 +29,7 @@ function LinhaOpcao({ icone, rotulo, valor, mostrarValor, aoPressionar }) {
 
 export default function Configuracoes({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const [plano, setPlano] = useState(null);
 
   useEffect(() => {
@@ -50,17 +51,18 @@ export default function Configuracoes({ navigation }) {
   };
 
   const sair = async () => {
-    Alert.alert(t('configuracoes.sair'), t('configuracoes.sairMsg'), [
-      { text: t('comum.cancelar'), style: 'cancel' },
-      {
-        text: t('configuracoes.confirmarSair'),
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          navigation.reset({ index: 0, routes: [{ name: 'Cadastro' }] });
-        },
+    dialogo.confirmar({
+      tipo: 'sair',
+      titulo: t('configuracoes.sair'),
+      mensagem: t('configuracoes.sairMsg'),
+      rotuloConfirmar: t('configuracoes.confirmarSair'),
+      rotuloCancelar: t('comum.cancelar'),
+      destrutivo: true,
+      onConfirmar: async () => {
+        await logout();
+        navigation.reset({ index: 0, routes: [{ name: 'Cadastro' }] });
       },
-    ]);
+    });
   };
 
   return (

@@ -5,12 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useDialogo } from '../components/Dialogo';
 import { saveSelectedPlan, getSelectedPlan } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
@@ -30,6 +30,7 @@ function formatarMoeda(valor, idioma) {
 
 export default function Mensal({ navigation }) {
   const { t, idioma } = useIdioma();
+  const dialogo = useDialogo();
   const [planoSelecionado, setPlanoSelecionado] = useState('mensal');
 
   useEffect(() => {
@@ -52,13 +53,15 @@ export default function Mensal({ navigation }) {
   const handleAssinar = async () => {
     try {
       await saveSelectedPlan(planoSelecionado);
-      Alert.alert(
-        t('mensal.ativadoTitulo'),
-        t('mensal.ativadoMsg', { plano: t(`mensal.${planoSelecionado}`) }),
-        [{ text: 'OK', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'TreinoHub' }] }) }]
-      );
+      dialogo.sucesso({
+        titulo: t('mensal.ativadoTitulo'),
+        mensagem: t('mensal.ativadoMsg', { plano: t(`mensal.${planoSelecionado}`) }),
+        rotuloConfirmar: t('comum.entendi'),
+        onConfirmar: () => navigation.reset({ index: 0, routes: [{ name: 'TreinoHub' }] }),
+      });
     } catch (error) {
-      Alert.alert(t('comum.erro'), t('mensal.erroAtivar'));
+      console.warn('Erro ao ativar plano:', error);
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('mensal.erroAtivar') });
     }
   };
 

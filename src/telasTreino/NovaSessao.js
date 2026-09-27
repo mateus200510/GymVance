@@ -6,17 +6,17 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Alert,
   Image,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
+import MenuSerie from '../components/MenuSerie';
+import { useDialogo } from '../components/Dialogo';
 import { useNomeUsuario, useFotoPerfil } from '../services/useUserProfile';
-import { TIPOS_SERIE, TIPO_PADRAO, criarSerie, tipoDe, numeroNormalDaSerie, rotuloDaSerie } from '../services/series';
+import { TIPO_PADRAO, criarSerie, tipoDe, numeroNormalDaSerie, rotuloDaSerie } from '../services/series';
 import { useIdioma, chaveTraducaoGrupoMuscular, chaveTraducaoEquipamento } from '../services/idioma';
 import { nomeExercicio } from '../services/storage';
 
@@ -24,6 +24,7 @@ const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFF
 
 export default function NovaSessao({ navigation, route }) {
   const { t, idioma } = useIdioma();
+  const dialogo = useDialogo();
   const [titulo, setTitulo] = useState('');
   const [exerciciosSelecionados, setExerciciosSelecionados] = useState([]);
   const nomeUsuario = useNomeUsuario();
@@ -95,11 +96,11 @@ export default function NovaSessao({ navigation, route }) {
 
   const handleIniciarTreino = () => {
     if (!titulo.trim()) {
-      Alert.alert(t('comum.erro'), t('novaSessao.erroSemTitulo'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('novaSessao.erroSemTitulo') });
       return;
     }
     if (exerciciosSelecionados.length === 0) {
-      Alert.alert(t('comum.erro'), t('novaSessao.erroSemExercicios'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('novaSessao.erroSemExercicios') });
       return;
     }
     navigation?.navigate('SessaoAtiva', { titulo, exercicios: exerciciosSelecionados });
@@ -225,60 +226,20 @@ export default function NovaSessao({ navigation, route }) {
         <View style={{ flex: 1 }} />
       </ScrollView>
 
-      <Modal
+      <MenuSerie
         visible={serieEmEdicao !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSerieEditando(null)}
-      >
-        <TouchableOpacity
-          style={styles.modalFundo}
-          activeOpacity={1}
-          onPress={() => setSerieEditando(null)}
-        >
-          <View style={styles.menuSerie}>
-            <Text style={styles.menuTitulo}>
-              {serieEmEdicao
-                ? (tipoDe(serieEmEdicao) === TIPO_PADRAO
-                    ? `${t('sessaoAtiva.serieLabel')} ${numeroNormalDaSerie(seriesDoExercicioEdicao, serieEmEdicao)}`
-                    : t(`tipo.${tipoDe(serieEmEdicao)}`))
-                : ''}
-            </Text>
-            <Text style={styles.menuSubtitulo}>{t('sessaoAtiva.menuSubtitulo')}</Text>
-
-            {TIPOS_SERIE.map((item) => {
-              const ativo = serieEmEdicao && tipoDe(serieEmEdicao) === item.tipo;
-              return (
-                <TouchableOpacity
-                  key={item.tipo}
-                  style={[styles.menuItem, ativo && styles.menuItemAtivo]}
-                  onPress={() => serieEmEdicao && alterarTipoSerie(serieEditando.exIdx, serieEmEdicao.id, item.tipo)}
-                >
-                  <View style={[styles.menuSigla, item.tipo === TIPO_PADRAO && styles.menuSiglaNormal]}>
-                    <Text style={styles.menuSiglaText}>{item.sigla}</Text>
-                  </View>
-                  <Text style={[styles.menuItemLabel, ativo && styles.menuItemLabelAtivo]}>{t(`tipo.${item.tipo}`)}</Text>
-                  {ativo && <Ionicons name="checkmark" size={16} color={COLORS.green} />}
-                </TouchableOpacity>
-              );
-            })}
-
-            <View style={styles.menuDivisor} />
-
-            <TouchableOpacity
-              style={styles.menuRemover}
-              onPress={() => serieEmEdicao && removerSerie(serieEditando.exIdx, serieEmEdicao.id)}
-            >
-              <Ionicons name="trash-outline" size={16} color="#E5484D" />
-              <Text style={styles.menuRemoverText}>{t('sessaoAtiva.removerSerie')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuCancelar} onPress={() => setSerieEditando(null)}>
-              <Text style={styles.menuCancelarText}>{t('sessaoAtiva.cancelar')}</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        titulo={
+          serieEmEdicao
+            ? (tipoDe(serieEmEdicao) === TIPO_PADRAO
+                ? `${t('sessaoAtiva.serieLabel')} ${numeroNormalDaSerie(seriesDoExercicioEdicao, serieEmEdicao)}`
+                : t(`tipo.${tipoDe(serieEmEdicao)}`))
+            : ''
+        }
+        tipoAtual={serieEmEdicao ? tipoDe(serieEmEdicao) : TIPO_PADRAO}
+        onClose={() => setSerieEditando(null)}
+        onSelecionarTipo={(tipo) => serieEmEdicao && alterarTipoSerie(serieEditando.exIdx, serieEmEdicao.id, tipo)}
+        onRemover={() => serieEmEdicao && removerSerie(serieEditando.exIdx, serieEmEdicao.id)}
+      />
 
       <BottomNavBar activeTab="treino" />
     </SafeAreaView>
@@ -316,22 +277,6 @@ const styles = StyleSheet.create({
   btnRemoverSerie: { padding: 4 },
   btnAdicionarSerie: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: COLORS.inputBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginTop: 8 },
   btnAdicionarSerieText: { color: COLORS.green, fontSize: 12, fontWeight: '600' },
-  modalFundo: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
-  menuSerie: { backgroundColor: '#1A1A1A', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 28 },
-  menuTitulo: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
-  menuSubtitulo: { color: COLORS.muted, fontSize: 12, marginTop: 2, marginBottom: 12 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 10 },
-  menuItemAtivo: { backgroundColor: COLORS.inputBg },
-  menuItemLabel: { color: COLORS.text, fontSize: 14, flex: 1 },
-  menuItemLabelAtivo: { fontWeight: '700' },
-  menuSigla: { width: 24, height: 24, borderRadius: 6, backgroundColor: COLORS.inputBg, alignItems: 'center', justifyContent: 'center' },
-  menuSiglaNormal: { backgroundColor: COLORS.card },
-  menuSiglaText: { color: COLORS.text, fontWeight: '700', fontSize: 12 },
-  menuDivisor: { height: StyleSheet.hairlineWidth, backgroundColor: '#333', marginVertical: 8 },
-  menuRemover: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 8 },
-  menuRemoverText: { color: '#E5484D', fontSize: 14, fontWeight: '700' },
-  menuCancelar: { marginTop: 6, backgroundColor: COLORS.card, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  menuCancelarText: { color: COLORS.text, fontWeight: '700' },
   btnIniciarTreino: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 14, borderRadius: 12, marginTop: 16 },
   btnIniciarTreinoText: { color: '#000', fontWeight: '700', fontSize: 14 },
 });

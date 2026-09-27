@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useDialogo } from '../components/Dialogo';
 import { getUserProfile, saveUserProfile } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
@@ -20,6 +20,7 @@ const KG_PARA_LBS = 2.20462;
 
 export default function PesoScreen({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const [peso, setPeso] = useState('');
   const [unidade, setUnidade] = useState('kg'); // 'kg' | 'lb'
 
@@ -110,7 +111,7 @@ export default function PesoScreen({ navigation }) {
           const valor = Number.parseFloat(String(peso).replace(',', '.'));
 
           if (!peso || Number.isNaN(valor) || valor <= 0) {
-            Alert.alert(t('peso.obrigatorio'), t('peso.erroValor'));
+            dialogo.aviso({ titulo: t('peso.obrigatorio'), mensagem: t('peso.erroValor') });
             return;
           }
 
@@ -118,7 +119,7 @@ export default function PesoScreen({ navigation }) {
             await saveUserProfile({ peso: valor, pesoUnidade: unidade });
           } catch (error) {
             console.warn('Erro ao salvar peso:', error);
-            Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
+            dialogo.erro({ titulo: t('comum.erro'), mensagem: t('comum.erroSalvarDados') });
             return;
           }
 

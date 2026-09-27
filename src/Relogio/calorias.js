@@ -55,9 +55,6 @@ export default function Calorias({ navigation }) {
     };
   }, []);
 
-  const historico = [];
-  const maxHistorico = historico.length > 0 ? Math.max(...historico) : 1;
-
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />

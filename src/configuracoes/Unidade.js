@@ -5,12 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { useIdioma } from '../services/idioma';
 import { getUnidadePeso, setUnidadePeso, getUnidadeAltura, setUnidadeAltura, getUserProfile, saveUserProfile, converterPeso, converterAltura } from '../services/storage';
 
@@ -18,6 +18,7 @@ const VERDE = '#3DDC5C';
 
 export default function Unidade({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const [unidadePeso, setUnidadePesoState] = useState('kg');
   const [unidadeAltura, setUnidadeAlturaState] = useState('cm');
 
@@ -30,8 +31,8 @@ export default function Unidade({ navigation }) {
     })();
   }, []);
 
-  const alternarPeso = async () => {
-    const nova = unidadePeso === 'kg' ? 'lb' : 'kg';
+  const definirPeso = async (nova) => {
+    if (nova === unidadePeso) return;
     try {
       const perfil = await getUserProfile();
       if (perfil?.peso) {
@@ -43,12 +44,12 @@ export default function Unidade({ navigation }) {
       setUnidadePesoState(nova);
     } catch (error) {
       console.warn('Erro ao converter peso:', error);
-      Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('comum.erroSalvarDados') });
     }
   };
 
-  const alternarAltura = async () => {
-    const nova = unidadeAltura === 'cm' ? 'in' : 'cm';
+  const definirAltura = async (nova) => {
+    if (nova === unidadeAltura) return;
     try {
       const perfil = await getUserProfile();
       if (perfil?.altura) {
@@ -60,7 +61,7 @@ export default function Unidade({ navigation }) {
       setUnidadeAlturaState(nova);
     } catch (error) {
       console.warn('Erro ao converter altura:', error);
-      Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('comum.erroSalvarDados') });
     }
   };
 
@@ -82,7 +83,7 @@ export default function Unidade({ navigation }) {
             <TouchableOpacity
               style={[styles.opcao, unidadePeso === 'kg' && styles.opcaoAtiva]}
               activeOpacity={0.7}
-              onPress={alternarPeso}
+              onPress={() => definirPeso('kg')}
             >
               <Text style={[styles.opcaoRotulo, unidadePeso === 'kg' && styles.opcaoRotuloAtiva]}>{t('unidade.kg')}</Text>
               {unidadePeso === 'kg' && <Feather name="check" size={16} color={VERDE} />}
@@ -91,7 +92,7 @@ export default function Unidade({ navigation }) {
             <TouchableOpacity
               style={[styles.opcao, unidadePeso === 'lb' && styles.opcaoAtiva]}
               activeOpacity={0.7}
-              onPress={alternarPeso}
+              onPress={() => definirPeso('lb')}
             >
               <Text style={[styles.opcaoRotulo, unidadePeso === 'lb' && styles.opcaoRotuloAtiva]}>{t('unidade.lb')}</Text>
               {unidadePeso === 'lb' && <Feather name="check" size={16} color={VERDE} />}
@@ -103,7 +104,7 @@ export default function Unidade({ navigation }) {
             <TouchableOpacity
               style={[styles.opcao, unidadeAltura === 'cm' && styles.opcaoAtiva]}
               activeOpacity={0.7}
-              onPress={alternarAltura}
+              onPress={() => definirAltura('cm')}
             >
               <Text style={[styles.opcaoRotulo, unidadeAltura === 'cm' && styles.opcaoRotuloAtiva]}>{t('unidade.cm')}</Text>
               {unidadeAltura === 'cm' && <Feather name="check" size={16} color={VERDE} />}
@@ -112,7 +113,7 @@ export default function Unidade({ navigation }) {
             <TouchableOpacity
               style={[styles.opcao, unidadeAltura === 'in' && styles.opcaoAtiva]}
               activeOpacity={0.7}
-              onPress={alternarAltura}
+              onPress={() => definirAltura('in')}
             >
               <Text style={[styles.opcaoRotulo, unidadeAltura === 'in' && styles.opcaoRotuloAtiva]}>{t('unidade.ft')}</Text>
               {unidadeAltura === 'in' && <Feather name="check" size={16} color={VERDE} />}

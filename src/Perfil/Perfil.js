@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Alert,
+  Linking,
   Image,
   Modal,
 } from 'react-native';
@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { getUserProfile, saveUserProfile, getWorkoutHistory, formatarDataNascimento, getEstatisticasTreino, calcularIdade, formatarPeso, formatarAltura } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 import { useUsuario } from '../services/UserContext';
@@ -83,6 +84,7 @@ function StatCard({ label, valor, icone }) {
 
 export default function Perfil({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const { refreshUsuario } = useUsuario();
   const [perfil, setPerfil] = useState({});
   const [totalTreinos, setTotalTreinos] = useState(0);
@@ -133,42 +135,46 @@ export default function Perfil({ navigation }) {
       }
 
       if (resultado.status === 'bloqueada') {
-        Alert.alert(
-          t('perfil.galeriaBloqueada'),
-          t('perfil.galeriaBloqueadaMsg'),
-          [
-            { text: t('comum.cancelar'), style: 'cancel' },
-            { text: t('perfil.abrirConfiguracoes'), onPress: () => require('react-native').Linking.openSettings() },
-          ]
-        );
+        dialogo.informacao({
+          titulo: t('perfil.galeriaBloqueada'),
+          mensagem: t('perfil.galeriaBloqueadaMsg'),
+          rotuloConfirmar: t('perfil.abrirConfiguracoes'),
+          rotuloCancelar: t('comum.cancelar'),
+          onConfirmar: () => Linking.openSettings(),
+        });
         return;
       }
 
       if (resultado.status === 'negada') {
-        Alert.alert(t('perfil.permissaoNecessaria'), t('perfil.fotosPermissaoMsg'));
+        dialogo.informacao({
+          titulo: t('perfil.permissaoNecessaria'),
+          mensagem: t('perfil.fotosPermissaoMsg'),
+        });
       }
     } catch (error) {
       console.warn('Erro ao adicionar foto:', error);
-      Alert.alert(t('comum.erro'), t('perfil.erroAdicionarFoto'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('perfil.erroAdicionarFoto') });
     }
   };
 
-  const removerFoto = async () => {
-    Alert.alert(
-      t('editarPerfil.removerFoto'),
-      t('perfil.confirmarRemoverFoto'),
-      [
-        { text: t('comum.cancelar'), style: 'cancel' },
-        { text: t('editarPerfil.removerFoto'), style: 'destructive', onPress: async () => {
-            if (perfil?.foto) {
-              await removerFotoPerfilLocal(perfil.foto);
-              await saveUserProfile({ foto: null });
-              setPerfil((prev) => ({ ...prev, foto: null }));
-              await refreshUsuario();
-            }
-          } },
-      ]
-    );
+  const removerFoto = () => {
+    dialogo.confirmar({
+      tipo: 'destrutivo',
+      titulo: t('editarPerfil.removerFoto'),
+      mensagem: t('perfil.confirmarRemoverFoto'),
+      rotuloConfirmar: t('editarPerfil.removerFoto'),
+      rotuloCancelar: t('comum.cancelar'),
+      destrutivo: true,
+      onConfirmar: async () => {
+        if (perfil?.foto) {
+          await removerFotoPerfilLocal(perfil.foto);
+          await saveUserProfile({ foto: null });
+          setPerfil((prev) => ({ ...prev, foto: null }));
+          await refreshUsuario();
+        }
+        dialogo.sucessoToast(t('perfil.fotoRemovida'));
+      },
+    });
   };
 
   const abrirEditarPerfil = () => {

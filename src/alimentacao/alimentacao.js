@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Linking,
   Image,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { getProgressPhotos, saveProgressPhoto, deleteProgressPhoto } from '../services/storage';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { useNomeUsuario } from '../services/useUserProfile';
 import { useIdioma } from '../services/idioma';
 import { getKcalMeta, getKcalQueimadas } from '../services/metricas';
@@ -166,6 +166,7 @@ function TelaGaleria({ onVoltar, fotos = [], onExcluirFoto }) {
 
 export default function Alimentacao({ navigation }) {
   const { t, idioma } = useIdioma();
+  const dialogo = useDialogo();
   const nomeUsuario = useNomeUsuario();
   const [tela, setTela] = useState('dashboard');
   const [cameraPermission, requestPermission] = useCameraPermissions();
@@ -213,14 +214,14 @@ export default function Alimentacao({ navigation }) {
       setFotoCapturada(restantes[0]?.uri ?? null);
     } catch (error) {
       console.warn('Erro ao excluir foto:', error);
-      Alert.alert(t('comum.erro'), t('alimentacao.erroSalvarFoto'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('alimentacao.erroSalvarFoto') });
     }
   };
 
   const abrirGaleria = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(t('alimentacao.permissaoTitulo'), t('alimentacao.permissaoMsg'));
+      dialogo.aviso({ titulo: t('alimentacao.permissaoTitulo'), mensagem: t('alimentacao.permissaoMsg') });
       if (!permission.canAskAgain) {
         Linking.openSettings();
       }
@@ -243,7 +244,7 @@ export default function Alimentacao({ navigation }) {
       salvas = await saveProgressPhoto(result.assets[0].uri, { origem: 'galeria' });
     } catch (error) {
       console.warn('Erro ao salvar foto:', error);
-      Alert.alert(t('comum.erro'), t('alimentacao.erroSalvarFoto'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('alimentacao.erroSalvarFoto') });
       return;
     }
 
@@ -258,11 +259,17 @@ export default function Alimentacao({ navigation }) {
 
       if (!permissao.granted) {
         if (permissao.canAskAgain === false) {
-          Alert.alert(t('alimentacao.cameraIndisponivel'), t('alimentacao.cameraMsg'));
-          Linking.openSettings();
+          dialogo.aviso({
+            titulo: t('alimentacao.cameraIndisponivel'),
+            mensagem: t('alimentacao.cameraMsg'),
+            rotuloConfirmar: t('perfil.abrirConfiguracoes'),
+            rotuloCancelar: t('comum.cancelar'),
+            empilhar: true,
+            onConfirmar: () => Linking.openSettings(),
+          });
           return;
         }
-        Alert.alert(t('alimentacao.permissaoTitulo'), t('alimentacao.cameraPermMsg'));
+        dialogo.aviso({ titulo: t('alimentacao.permissaoTitulo'), mensagem: t('alimentacao.cameraPermMsg') });
         return;
       }
     }
@@ -284,7 +291,8 @@ export default function Alimentacao({ navigation }) {
       }
       setTela('dashboard');
     } catch (error) {
-      Alert.alert(t('comum.erro'), t('alimentacao.erroCapturar'));
+      console.warn('Erro ao capturar foto:', error);
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('alimentacao.erroCapturar') });
     }
   };
 

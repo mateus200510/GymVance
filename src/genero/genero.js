@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useDialogo } from '../components/Dialogo';
 import { getUserProfile, saveUserProfile, setOnboardingComplete, formatarDataNascimento, normalizarDataNascimento } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
@@ -54,6 +54,7 @@ function validarDataNascimento(value) {
 
 export default function Genero({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const [nome, setNome] = useState('');
   const [generoSelecionado, setGeneroSelecionado] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
@@ -81,18 +82,18 @@ export default function Genero({ navigation }) {
 
   const handleAvancar = async () => {
     if (!nome.trim()) {
-      Alert.alert(t('genero.erroNome'), t('genero.erroNomeMsg'));
+      dialogo.aviso({ titulo: t('genero.erroNome'), mensagem: t('genero.erroNomeMsg') });
       return;
     }
 
     const dataIso = validarDataNascimento(dataNascimento);
     if (!dataIso) {
-      Alert.alert(t('genero.erroData'), t('genero.erroDataMsg'));
+      dialogo.aviso({ titulo: t('genero.erroData'), mensagem: t('genero.erroDataMsg') });
       return;
     }
 
     if (!generoSelecionado) {
-      Alert.alert(t('genero.erroGenero'), t('genero.erroGeneroMsg'));
+      dialogo.aviso({ titulo: t('genero.erroGenero'), mensagem: t('genero.erroGeneroMsg') });
       return;
     }
 
@@ -105,7 +106,7 @@ export default function Genero({ navigation }) {
       await setOnboardingComplete(true);
     } catch (error) {
       console.warn('Erro ao salvar perfil:', error);
-      Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('comum.erroSalvarDados') });
       return;
     }
 

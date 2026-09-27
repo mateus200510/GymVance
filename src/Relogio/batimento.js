@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   StatusBar,
-  Alert,
   Linking,
   useWindowDimensions,
 } from 'react-native';
@@ -15,6 +14,7 @@ import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 
 import BottomNavBar from '../components/BottomNavBar';
+import { useDialogo } from '../components/Dialogo';
 import { useNomeUsuario } from '../services/useUserProfile';
 import { useIdioma } from '../services/idioma';
 import { getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas';
@@ -23,6 +23,7 @@ import { getBpmAtual, getKcalMeta, getKcalQueimadas } from '../services/metricas
 // Mostra o BPM em destaque no círculo central e a queima diária logo abaixo
 export default function Batimento({ navigation }) {
   const { t, numero } = useIdioma();
+  const dialogo = useDialogo();
   const { width } = useWindowDimensions();
   const nomeUsuario = useNomeUsuario();
   const [bpmAtual, setBpmAtual] = useState(null);
@@ -44,8 +45,17 @@ export default function Batimento({ navigation }) {
 
       if (status !== 'granted') {
         if (!canAskAgain) {
-          Alert.alert(t('batimento.erroBloqueadoTitulo'), t('batimento.erroBloqueadoMsg'));
-          Linking.openSettings();
+          // Permissão negada de forma definitiva: só os botões do diálogo fecham.
+          dialogo.aviso({
+            titulo: t('batimento.erroBloqueadoTitulo'),
+            mensagem: t('batimento.erroBloqueadoMsg'),
+            rotuloConfirmar: t('perfil.abrirConfiguracoes'),
+            rotuloCancelar: t('comum.cancelar'),
+            cancelavel: false,
+            fecharAoTocarFora: false,
+            empilhar: true,
+            onConfirmar: () => Linking.openSettings(),
+          });
         } else {
           setGpsError(t('batimento.erroPermissao'));
         }
@@ -97,10 +107,6 @@ export default function Batimento({ navigation }) {
       ativo = false;
     };
   }, []);
-
-  const demoSats = null;
-  const maxHistorico = 1;
-  const minHistorico = 1;
 
   const statusPrecisao =
     precision === null

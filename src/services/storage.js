@@ -365,10 +365,17 @@ export async function saveUserProfile(profile) {
     const current = await getUserProfile();
     const next = { ...current, ...profile };
 
-    if (profile?.dataNascimento || current?.dataNascimento) {
-      const dataIso = normalizarDataNascimento(profile?.dataNascimento ?? current?.dataNascimento);
+    // `undefined` = campo não enviado (mantém o valor atual).
+    // `null`, '' ou um texto inválido = limpeza explícita; sem isso, usar
+    // `profile?.dataNascimento || current?.dataNascimento` tornava impossível
+    // apagar uma data já salva e ainda ressuscitava a chave legada `data`.
+    if (profile?.dataNascimento !== undefined) {
+      const dataIso = normalizarDataNascimento(profile.dataNascimento);
       if (dataIso) {
         next.dataNascimento = dataIso;
+      } else {
+        delete next.dataNascimento;
+        delete next.data;
       }
     }
 

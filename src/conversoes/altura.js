@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useDialogo } from '../components/Dialogo';
 import { getUserProfile, saveUserProfile } from '../services/storage';
 import { useIdioma } from '../services/idioma';
 
@@ -20,6 +20,7 @@ const CM_PARA_IN = 0.393701;
 
 export default function AlturaScreen({ navigation }) {
   const { t } = useIdioma();
+  const dialogo = useDialogo();
   const [altura, setAltura] = useState('');
   const [unidade, setUnidade] = useState('cm'); // 'cm' | 'in'
 
@@ -110,7 +111,7 @@ export default function AlturaScreen({ navigation }) {
           const valor = Number.parseFloat(String(altura).replace(',', '.'));
 
           if (!altura || Number.isNaN(valor) || valor <= 0) {
-            Alert.alert(t('altura.obrigatoria'), t('altura.erroValor'));
+            dialogo.aviso({ titulo: t('altura.obrigatoria'), mensagem: t('altura.erroValor') });
             return;
           }
 
@@ -118,7 +119,7 @@ export default function AlturaScreen({ navigation }) {
             await saveUserProfile({ altura: valor, alturaUnidade: unidade });
           } catch (error) {
             console.warn('Erro ao salvar altura:', error);
-            Alert.alert(t('comum.erro'), t('comum.erroSalvarDados'));
+            dialogo.erro({ titulo: t('comum.erro'), mensagem: t('comum.erroSalvarDados') });
             return;
           }
 
