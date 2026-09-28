@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 
 import BottomNavBar from '../components/BottomNavBar';
 import { useDialogo } from '../components/Dialogo';
@@ -45,6 +44,7 @@ export default function CatalogoExercicios({ navigation, route }) {
   const [busca, setBusca] = useState('');
   const [categoriaExpandida, setCategoriaExpandida] = useState({});
   const [modalCustom, setModalCustom] = useState(false);
+  const [modalGrupo, setModalGrupo] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [customNome, setCustomNome] = useState('');
   const [customGrupo, setCustomGrupo] = useState('');
@@ -345,7 +345,7 @@ export default function CatalogoExercicios({ navigation, route }) {
 
       <BottomNavBar activeTab="treino" />
 
-      <Modal visible={modalCustom} transparent animationType="fade" onRequestClose={() => setModalCustom(false)}>
+<Modal visible={modalCustom} transparent animationType="fade" onRequestClose={() => setModalCustom(false)}>
         <View style={styles.modalFundo}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitulo}>
@@ -360,14 +360,14 @@ export default function CatalogoExercicios({ navigation, route }) {
               autoCapitalize="words"
             />
             <Text style={styles.modalLabel}>{t('exercicios.grupoMuscular') || 'Grupo Muscular'}</Text>
-            <Picker
-              selectedValue={customGrupo}
-              onValueChange={setCustomGrupo}
+            <TouchableOpacity
+              style={styles.modalInput}
+              onPress={() => setModalGrupo(true)}
             >
-              {GRUPOS_MUSCULARES.map((grupo) => (
-                <Picker.Item key={grupo} label={t(chaveTraducaoGrupoMuscular(grupo)) || grupo} value={grupo} />
-              ))}
-            </Picker>
+              <Text style={styles.modalPickerText}>
+                {customGrupo ? t(chaveTraducaoGrupoMuscular(customGrupo)) || customGrupo : t('exercicios.selecionarGrupo')}
+              </Text>
+            </TouchableOpacity>
             <Text style={styles.modalLabel}>{t('exercicios.equipamento')}</Text>
             <TextInput
               style={styles.modalInput}
@@ -388,9 +388,38 @@ export default function CatalogoExercicios({ navigation, route }) {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={modalGrupo} transparent animationType="fade" onRequestClose={() => setModalGrupo(false)}>
+        <View style={styles.modalFundo}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitulo}>{t('exercicios.grupoMuscular') || 'Grupo Muscular'}</Text>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalGrupoList}>
+              {GRUPOS_MUSCULARES.map((grupo) => (
+                <TouchableOpacity
+                  key={grupo}
+                  style={[styles.modalGrupoItem, customGrupo === grupo && styles.modalGrupoItemSelected]}
+                  onPress={() => {
+                    setCustomGrupo(grupo);
+                    setModalGrupo(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.modalGrupoItemText, customGrupo === grupo && styles.modalGrupoItemTextSelected]}>
+                    {t(chaveTraducaoGrupoMuscular(grupo)) || grupo}
+                  </Text>
+                  {customGrupo === grupo && <Feather name="check" size={16} color={VERDE} />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={styles.botaoSecundarioModal} onPress={() => setModalGrupo(false)}>
+              <Text style={styles.botaoSecundarioModalTexto}>{t('comum.cancelar')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
-  }
+}
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#000' },
@@ -434,4 +463,10 @@ const styles = StyleSheet.create({
   botaoSecundarioModalTexto: { color: '#fff', fontSize: 13, fontWeight: '600' },
   botaoVerdeModal: { flex: 1, alignItems: 'center', paddingVertical: 12, backgroundColor: VERDE, borderRadius: 12 },
   botaoVerdeModalTexto: { color: '#000', fontSize: 13, fontWeight: '700' },
+  modalPickerText: { color: '#fff', fontSize: 14 },
+  modalGrupoList: { maxHeight: 300, paddingVertical: 8 },
+  modalGrupoItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#2C2C2E' },
+  modalGrupoItemSelected: { backgroundColor: '#1B2A1E' },
+  modalGrupoItemText: { color: '#fff', fontSize: 14 },
+  modalGrupoItemTextSelected: { color: VERDE, fontWeight: '600' },
 });

@@ -10,6 +10,15 @@ import { useIdioma } from '../services/idioma';
 
 const COLORS = { bg: '#121212', card: '#1E1E1E', green: '#3DDC5C', text: '#FFFFFF', muted: '#8A8A8A', laranja: '#FF7A1A' };
 
+function diaInicio(data) {
+  return new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+}
+
+function diaAnterior(chave) {
+  const d = new Date(chave);
+  return diaInicio(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
+}
+
 function calcularStreak(historico) {
   const dias = new Set();
 
@@ -21,7 +30,7 @@ function calcularStreak(historico) {
     if (Number.isNaN(data.getTime())) {
       continue;
     }
-    const dia = new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+    const dia = diaInicio(data);
     dias.add(dia);
   }
 
@@ -29,15 +38,13 @@ function calcularStreak(historico) {
     return 0;
   }
 
-  const hoje = new Date();
-  const diaHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
-  const msDia = 24 * 60 * 60 * 1000;
-  let atual = dias.has(diaHoje) ? diaHoje : diaHoje - msDia;
+  const hoje = diaInicio(new Date());
+  let atual = dias.has(hoje) ? hoje : diaAnterior(hoje);
   let streak = 0;
 
   while (dias.has(atual)) {
     streak += 1;
-    atual -= msDia;
+    atual = diaAnterior(atual);
   }
 
   return streak;

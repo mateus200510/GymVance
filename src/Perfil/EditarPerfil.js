@@ -70,6 +70,8 @@ export default function EditarPerfil({ navigation }) {
   const [cintura, setCintura] = useState('');
   const [braco, setBraco] = useState('');
   const [peito, setPeito] = useState('');
+  const [kcalMeta, setKcalMeta] = useState('');
+  const [bpmBase, setBpmBase] = useState('');
   const [foto, setFoto] = useState(null);
   const [idade, setIdade] = useState(null);
   const [carregando, setCarregando] = useState(false);
@@ -91,6 +93,8 @@ export default function EditarPerfil({ navigation }) {
       if (perfil?.cintura !== undefined && perfil?.cintura !== null) setCintura(String(perfil.cintura));
       if (perfil?.braco !== undefined && perfil?.braco !== null) setBraco(String(perfil.braco));
       if (perfil?.peito !== undefined && perfil?.peito !== null) setPeito(String(perfil.peito));
+      if (perfil?.kcalMeta !== undefined && perfil?.kcalMeta !== null) setKcalMeta(String(perfil.kcalMeta));
+      if (perfil?.bpmBase !== undefined && perfil?.bpmBase !== null) setBpmBase(String(perfil.bpmBase));
     })();
   }, []);
 
@@ -165,6 +169,14 @@ export default function EditarPerfil({ navigation }) {
     return Number.isFinite(numero) && numero > 0 ? numero : undefined;
   };
 
+  const parseNumeroInteiro = (valor) => {
+    if (!valor) {
+      return undefined;
+    }
+    const numero = parseInt(String(valor).replace(/\D/g, ''), 10);
+    return Number.isFinite(numero) && numero > 0 ? numero : undefined;
+  };
+
   const salvar = async () => {
     if (!nome.trim()) {
       dialogo.erro({ titulo: t('comum.erro'), mensagem: t('genero.erroNomeMsg') });
@@ -188,6 +200,8 @@ export default function EditarPerfil({ navigation }) {
         cintura: parseMedida(cintura),
         braco: parseMedida(braco),
         peito: parseMedida(peito),
+        kcalMeta: parseNumeroInteiro(kcalMeta),
+        bpmBase: parseNumeroInteiro(bpmBase),
       });
       await refreshUsuario();
       dialogo.sucessoToast(t('perfil.salvoComSucesso'));
@@ -330,6 +344,27 @@ export default function EditarPerfil({ navigation }) {
                 />
               </View>
             </View>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.fieldLabel}>{t('editarPerfil.kcalMeta')}</Text>
+            <TextInput
+              style={styles.campoInput}
+              placeholder={t('editarPerfil.kcalMetaPlaceholder')}
+              placeholderTextColor="#6E6E73"
+              value={kcalMeta}
+              onChangeText={setKcalMeta}
+              keyboardType="numeric"
+            />
+            <Text style={styles.fieldLabel}>{t('editarPerfil.bpmBase')}</Text>
+            <TextInput
+              style={styles.campoInput}
+              placeholder={t('editarPerfil.bpmBasePlaceholder')}
+              placeholderTextColor="#6E6E73"
+              value={bpmBase}
+              onChangeText={setBpmBase}
+              keyboardType="numeric"
+            />
           </View>
 
           <TouchableOpacity style={[styles.botaoVerde, salvando && styles.botaoVerdeOcupado]} onPress={salvar} disabled={salvando}>

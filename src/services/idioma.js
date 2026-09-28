@@ -315,6 +315,10 @@ const TRADUCOES = {
     'editarPerfil.alterarFoto': 'Alterar foto',
     'editarPerfil.removerFoto': 'Remover foto',
     'editarPerfil.salvar': 'Salvar alterações',
+    'editarPerfil.kcalMeta': 'Meta calórica diária',
+    'editarPerfil.kcalMetaPlaceholder': 'Ex: 2500',
+    'editarPerfil.bpmBase': 'BPM de repouso',
+    'editarPerfil.bpmBasePlaceholder': 'Ex: 65',
 
     'conta.titulo': 'Conta',
     'conta.nome': 'Nome',
@@ -778,6 +782,10 @@ const TRADUCOES = {
     'editarPerfil.alterarFoto': 'Change Photo',
     'editarPerfil.removerFoto': 'Remove Photo',
     'editarPerfil.salvar': 'Save Changes',
+    'editarPerfil.kcalMeta': 'Daily calorie goal',
+    'editarPerfil.kcalMetaPlaceholder': 'Ex: 2500',
+    'editarPerfil.bpmBase': 'Resting BPM',
+    'editarPerfil.bpmBasePlaceholder': 'Ex: 65',
 
     'conta.titulo': 'Account',
     'conta.nome': 'Name',

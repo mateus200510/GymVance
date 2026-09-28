@@ -23,10 +23,13 @@ import { selecionarFotoDaGaleria, removerFotoPerfilLocal } from '../services/fot
 
 const VERDE = '#3DDC5C';
 
-const MS_DIA = 24 * 60 * 60 * 1000;
-
 function diaInicio(data) {
   return new Date(data.getFullYear(), data.getMonth(), data.getDate()).getTime();
+}
+
+function diaAnterior(chave) {
+  const d = new Date(chave);
+  return diaInicio(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
 }
 
 function calcularStreak(historico) {
@@ -42,12 +45,12 @@ function calcularStreak(historico) {
   if (dias.size === 0) return 0;
 
   const hoje = diaInicio(new Date());
-  let atual = dias.has(hoje) ? hoje : hoje - MS_DIA;
+  let atual = dias.has(hoje) ? hoje : diaAnterior(hoje);
   let streak = 0;
 
   while (dias.has(atual)) {
     streak += 1;
-    atual -= MS_DIA;
+    atual = diaAnterior(atual);
   }
 
   return streak;
