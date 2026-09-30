@@ -254,6 +254,13 @@ export default function Perfil({ navigation }) {
             <Text style={styles.exerciciosCount}>{estatisticas.totalExercicios}</Text>
           </View>
 
+          <TouchableOpacity style={styles.card} onPress={() => navigation?.navigate('MeusTreinos')} activeOpacity={0.8}>
+            <View style={styles.calendarioRow}>
+              <Feather name="list" size={16} color={VERDE} />
+              <Text style={styles.calendarioCardTitulo}>{t('meusTreinos.titulo')}</Text>
+              <Feather name="chevron-right" size={16} color="#8E8E93" />
+            </View>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.card} onPress={() => navigation?.navigate('Calendario')} activeOpacity={0.8}>
             <View style={styles.calendarioRow}>
               <Feather name="calendar" size={16} color={VERDE} />

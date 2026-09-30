@@ -120,7 +120,7 @@ export default function TreinoHub({ navigation }) {
               style={styles.proChip}
               onPress={() => navigation?.navigate('Planos')}
             >
-              <Text style={styles.proChipText}>PRO</Text>
+              <Text style={styles.proChipText}>{t('comum.pro')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -155,6 +155,11 @@ export default function TreinoHub({ navigation }) {
         <TouchableOpacity style={styles.btnCriar} onPress={() => navigation?.navigate('NovaSessao')}>
           <Ionicons name="add" size={18} color="#000" />
           <Text style={styles.btnCriarText}>{t('treinoHub.criar')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.btnMeusTreinos} onPress={() => navigation?.navigate('MeusTreinos')}>
+          <Ionicons name="list" size={18} color={COLORS.green} />
+          <Text style={styles.btnMeusTreinosText}>{t('meusTreinos.titulo')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -210,4 +215,6 @@ const styles = StyleSheet.create({
   btnIniciarText: { color: COLORS.text, fontWeight: '700' },
   btnCriar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.green, paddingVertical: 14, borderRadius: 12 },
   btnCriarText: { color: '#000', fontWeight: '700' },
+  btnMeusTreinos: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: COLORS.card, borderWidth: 1, borderColor: '#333', paddingVertical: 14, borderRadius: 12, marginTop: 10 },
+  btnMeusTreinosText: { color: COLORS.green, fontWeight: '700' },
 });

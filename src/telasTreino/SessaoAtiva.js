@@ -354,11 +354,38 @@ export default function SessaoAtiva({ navigation, route }) {
     }
 
     try {
+      const exerciciosAgrupados = [];
+      const exerciciosMap = new Map();
+
+      for (const s of series) {
+        const idx = s.exercicioIdx ?? 0;
+        if (!exerciciosMap.has(idx)) {
+          exerciciosMap.set(idx, {
+            exercicioIdx: idx,
+            nome: s.exercicioNome || '',
+            series: [],
+          });
+        }
+        exerciciosMap.get(idx).series.push({
+          id: s.id,
+          tipo: s.tipo,
+          kg: s.kg,
+          reps: s.reps,
+          concluido: s.concluido,
+          falhou: s.falhou,
+          nota: s.nota,
+        });
+      }
+
+      for (const idx of Array.from(exerciciosMap.keys()).sort((a, b) => a - b)) {
+        exerciciosAgrupados.push(exerciciosMap.get(idx));
+      }
+
       const treino = {
         treino: tituloSessao || t('sessaoAtiva.semTitulo'),
         data: new Date().toISOString(),
         duracao: tempo,
-        exercicios: series,
+        exercicios: exerciciosAgrupados,
       };
 
       canPersistir.current = false;

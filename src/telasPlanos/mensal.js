@@ -77,7 +77,7 @@ export default function Mensal({ navigation }) {
           <Ionicons name="barbell-outline" size={40} color="#111" />
           <Text style={styles.logoTexto}>GymVance</Text>
           <View style={styles.proBadge}>
-            <Text style={styles.proTexto}>PRO</Text>
+            <Text style={styles.proTexto}>{t('comum.pro')}</Text>
           </View>
         </View>
 

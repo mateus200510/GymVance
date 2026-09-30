@@ -154,6 +154,37 @@ export async function saveWorkoutHistory(workout) {
   }
 }
 
+export async function updateWorkoutHistory(index, workout) {
+  try {
+    const current = await getWorkoutHistory();
+    if (index < 0 || index >= current.length) {
+      throw new Error('Índice inválido');
+    }
+    const next = [...current];
+    next[index] = { ...next[index], ...workout };
+    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+    return next;
+  } catch (error) {
+    console.warn('Erro ao atualizar treino no histórico:', error);
+    throw error;
+  }
+}
+
+export async function deleteWorkoutHistory(index) {
+  try {
+    const current = await getWorkoutHistory();
+    if (index < 0 || index >= current.length) {
+      throw new Error('Índice inválido');
+    }
+    const next = current.filter((_, i) => i !== index);
+    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+    return next;
+  } catch (error) {
+    console.warn('Erro ao excluir treino do histórico:', error);
+    throw error;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Sessão de treino em andamento (autosave).
 // Permite recuperar o treino quando o app é fechado/reaberto no meio de uma

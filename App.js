@@ -20,6 +20,7 @@ import Perfil from './src/Perfil/Perfil';
 import Evolucao from './src/Perfil/Evolucao';
 import EditarPerfil from './src/Perfil/EditarPerfil';
 import Calendario from './src/Perfil/Calendario';
+import MeusTreinos from './src/Perfil/MeusTreinos';
 import Configuracoes from './src/configuracoes/configuracoes';
 import Idioma from './src/configuracoes/Idioma';
 import Unidade from './src/configuracoes/Unidade';
@@ -148,6 +149,11 @@ export default function App() {
         />
 
         <Stack.Screen
+          name="MeusTreinos"
+          component={MeusTreinos}
+        />
+
+        <Stack.Screen
           name="Configuracoes"
           component={Configuracoes}
         />
@@ -225,6 +231,7 @@ export default function App() {
         <Stack.Screen
           name="NovaSessao"
           component={NovaSessao}
+          options={{ detachInactiveScreens: false }}
         />
 
         <Stack.Screen
