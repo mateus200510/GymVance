@@ -86,6 +86,7 @@ export default function NovaSessao({ navigation, route }) {
               const ex = exerciciosMap.get(idx);
               return {
                 ...ex,
+                // Preserva ID existente se houver, senão gera novo
                 id: ex.id || `ex-${Date.now()}-${idx}-${Math.random().toString(36).slice(2)}`,
                 series: normalizarSeries(ex.series || []).map((s) => ({
                   ...s,
@@ -96,6 +97,7 @@ export default function NovaSessao({ navigation, route }) {
             });
         } else {
           // Formato novo: exercícios com series aninhadas
+          // Preserva ID existente do exercício se houver
           exerciciosNormalizados = exerciciosOriginais.map((ex, exIdx) => ({
             ...ex,
             id: ex.id || `ex-${Date.now()}-${exIdx}-${Math.random().toString(36).slice(2)}`,
@@ -151,6 +153,14 @@ export default function NovaSessao({ navigation, route }) {
     }
     if (exerciciosSelecionados.length === 0) {
       dialogo.erro({ titulo: t('comum.erro'), mensagem: t('novaSessao.erroSemExercicios') });
+      return;
+    }
+
+    const temSeries = exerciciosSelecionados.some(
+      (ex) => Array.isArray(ex.series) && ex.series.length > 0
+    );
+    if (!temSeries) {
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('novaSessao.erroSemSeries') });
       return;
     }
 
@@ -228,6 +238,36 @@ export default function NovaSessao({ navigation, route }) {
     ? exerciciosSelecionados.find((ex) => ex.id === serieEditando.exercicioId)?.series || []
     : [];
 
+  const handleSalvarEdicao = async () => {
+    if (!titulo.trim()) {
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('novaSessao.erroSemTitulo') });
+      return;
+    }
+    if (exerciciosSelecionados.length === 0) {
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('novaSessao.erroSemExercicios') });
+      return;
+    }
+    if (editandoIndex === null) return;
+
+    fecharMenu();
+    setCriandoSessao(true);
+
+    try {
+      const treinoAtualizado = {
+        treino: titulo,
+        exercicios: exerciciosSelecionados,
+      };
+      await updateWorkoutHistory(editandoIndex, treinoAtualizado);
+      dialogo.sucessoToast(t('meusTreinos.editadoSucesso'));
+      navigation?.goBack();
+    } catch (error) {
+      console.warn('Erro ao atualizar treino:', error);
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('meusTreinos.erroEditar') });
+    } finally {
+      setCriandoSessao(false);
+    }
+  };
+
   const handleIniciarTreino = () => {
     if (!titulo.trim()) {
       dialogo.erro({ titulo: t('comum.erro'), mensagem: t('novaSessao.erroSemTitulo') });
@@ -237,22 +277,16 @@ export default function NovaSessao({ navigation, route }) {
       dialogo.erro({ titulo: t('comum.erro'), mensagem: t('novaSessao.erroSemExercicios') });
       return;
     }
-    if (editandoIndex !== null) {
-      const treinoAtualizado = {
-        treino: titulo,
-        exercicios: exerciciosSelecionados,
-      };
-      updateWorkoutHistory(editandoIndex, treinoAtualizado)
-        .then(() => {
-          dialogo.sucessoToast(t('meusTreinos.editadoSucesso'));
-          navigation?.goBack();
-        })
-        .catch((error) => {
-          console.warn('Erro ao atualizar treino:', error);
-          dialogo.erro({ titulo: t('comum.erro'), mensagem: t('meusTreinos.erroEditar') });
-        });
+
+    const temSeries = exerciciosSelecionados.some(
+      (ex) => Array.isArray(ex.series) && ex.series.length > 0
+    );
+    if (!temSeries) {
+      dialogo.erro({ titulo: t('comum.erro'), mensagem: t('novaSessao.erroSemSeries') });
       return;
     }
+
+    fecharMenu();
     navigation?.navigate('SessaoAtiva', { titulo, exercicios: exerciciosSelecionados });
   };
 
@@ -293,9 +327,9 @@ export default function NovaSessao({ navigation, route }) {
           <View style={styles.menuDropdown}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={handleIniciarTreino}
+              onPress={editandoIndex !== null ? handleSalvarEdicao : handleCriarSessao}
               activeOpacity={0.7}
-              disabled={criandoSessao || editandoIndex !== null && false}
+              disabled={criandoSessao}
             >
               <Feather name="save" size={16} color={COLORS.green} style={styles.menuIcon} />
               <Text style={styles.menuItemText}>
@@ -305,6 +339,16 @@ export default function NovaSessao({ navigation, route }) {
                   ? t('editarPerfil.salvar')
                   : t('novaSessao.criarSessao')}
               </Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleIniciarTreino}
+              activeOpacity={0.7}
+              disabled={criandoSessao}
+            >
+              <Feather name="play" size={16} color={COLORS.green} style={styles.menuIcon} />
+              <Text style={styles.menuItemText}>{t('novaSessao.iniciarTreino')}</Text>
             </TouchableOpacity>
             <View style={styles.menuDivider} />
             <TouchableOpacity
@@ -407,9 +451,9 @@ export default function NovaSessao({ navigation, route }) {
           style={styles.btnIniciarTreino}
           onPress={handleIniciarTreino}
         >
-          <Ionicons name={editandoIndex !== null ? 'save' : 'play'} size={18} color="#000" />
+          <Ionicons name="play" size={18} color="#000" />
           <Text style={styles.btnIniciarTreinoText}>
-            {editandoIndex !== null ? t('editarPerfil.salvar') : t('novaSessao.iniciarTreino')}
+            {t('novaSessao.iniciarTreino')}
           </Text>
         </TouchableOpacity>
 

@@ -12,6 +12,11 @@ const CONTAS_KEY = 'gymvance_contas';
 const EXERCISES_CUSTOM_KEY = 'gymvance_exercicios_custom';
 const ACTIVE_SESSION_KEY = 'gymvance_sessao_ativa';
 
+// Gera ID estável para treino, seguindo o padrão do projeto (timestamp + random).
+function gerarIdTreino() {
+  return `wk-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function safeJsonParse(raw, fallback) {
   if (!raw) {
     return fallback;
@@ -145,7 +150,17 @@ export async function getWorkoutHistory() {
 export async function saveWorkoutHistory(workout) {
   try {
     const current = await getWorkoutHistory();
-    const next = [workout, ...current].slice(0, 20);
+    const treinoParaSalvar = { ...workout };
+    
+    // Adiciona ID e versão apenas se não existirem (novo treino)
+    if (!treinoParaSalvar.id) {
+      treinoParaSalvar.id = gerarIdTreino();
+    }
+    if (treinoParaSalvar.versao === undefined) {
+      treinoParaSalvar.versao = 1;
+    }
+    
+    const next = [treinoParaSalvar, ...current].slice(0, 20);
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(next));
     return next;
   } catch (error) {
@@ -154,14 +169,35 @@ export async function saveWorkoutHistory(workout) {
   }
 }
 
-export async function updateWorkoutHistory(index, workout) {
+export async function updateWorkoutHistory(identificador, workout) {
   try {
     const current = await getWorkoutHistory();
-    if (index < 0 || index >= current.length) {
-      throw new Error('Índice inválido');
+    
+    // Determina se identificador é ID (string) ou índice (number)
+    const isId = typeof identificador === 'string';
+    let index = -1;
+    
+    if (isId) {
+      // Busca por ID
+      index = current.findIndex((w) => w.id === identificador);
+      if (index === -1) {
+        throw new Error('Treino não encontrado');
+      }
+    } else {
+      // Modo legado: índice numérico
+      index = identificador;
+      if (index < 0 || index >= current.length) {
+        throw new Error('Índice inválido');
+      }
     }
+    
     const next = [...current];
-    next[index] = { ...next[index], ...workout };
+    // Preserva o ID original se existir
+    const treinoAtualizado = { ...next[index], ...workout };
+    if (next[index].id) {
+      treinoAtualizado.id = next[index].id;
+    }
+    next[index] = treinoAtualizado;
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(next));
     return next;
   } catch (error) {
@@ -170,12 +206,28 @@ export async function updateWorkoutHistory(index, workout) {
   }
 }
 
-export async function deleteWorkoutHistory(index) {
+export async function deleteWorkoutHistory(identificador) {
   try {
     const current = await getWorkoutHistory();
-    if (index < 0 || index >= current.length) {
-      throw new Error('Índice inválido');
+    
+    // Determina se identificador é ID (string) ou índice (number)
+    const isId = typeof identificador === 'string';
+    let index = -1;
+    
+    if (isId) {
+      // Busca por ID
+      index = current.findIndex((w) => w.id === identificador);
+      if (index === -1) {
+        throw new Error('Treino não encontrado');
+      }
+    } else {
+      // Modo legado: índice numérico
+      index = identificador;
+      if (index < 0 || index >= current.length) {
+        throw new Error('Índice inválido');
+      }
     }
+    
     const next = current.filter((_, i) => i !== index);
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(next));
     return next;

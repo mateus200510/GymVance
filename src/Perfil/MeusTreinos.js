@@ -68,8 +68,10 @@ export default function MeusTreinos({ navigation }) {
   const handleEditar = async (index, treino) => {
     fecharMenus();
     try {
+      // Usa ID do treino se disponível, senão fallback para índice
+      const identificador = treino.id ?? index;
       navigation?.navigate('NovaSessao', {
-        treinoParaEditar: { ...treino, _historicoIndex: index },
+        treinoParaEditar: { ...treino, _historicoIndex: identificador },
       });
     } catch (error) {
       console.warn('Erro ao abrir treino para edição:', error);
@@ -144,9 +146,11 @@ export default function MeusTreinos({ navigation }) {
     }
   };
 
-  const confirmarExcluir = (index) => {
+  const confirmarExcluir = (index, treino) => {
     fecharMenus();
-    setTreinoParaExcluir(index);
+    // Usa ID do treino se disponível, senão fallback para índice
+    const identificador = treino.id ?? index;
+    setTreinoParaExcluir(identificador);
   };
 
   const executarExclusao = async () => {
@@ -198,8 +202,10 @@ export default function MeusTreinos({ navigation }) {
         .map((idx) => exerciciosMap.get(idx));
     } else {
       // Formato novo: exercícios com series aninhadas
+      // Preserva todos os metadados do exercício (id, grupoMuscular, equipamento, etc.)
       exerciciosParaSessao = exerciciosOriginais.map((ex, exIdx) => ({
         ...ex,
+        // Preserva id, grupoMuscular, equipamento, nome originais
         exercicioIdx: exIdx,
         series: (ex.series || []).map((s) => ({
           ...s,
@@ -311,7 +317,7 @@ export default function MeusTreinos({ navigation }) {
                     <View style={styles.menuDivider} />
                     <TouchableOpacity
                       style={styles.menuItemDestructive}
-                      onPress={() => confirmarExcluir(index)}
+                      onPress={() => confirmarExcluir(index, treino)}
                       activeOpacity={0.7}
                     >
                       <Feather name="trash-2" size={16} color={VERMELHO} style={styles.menuIcon} />

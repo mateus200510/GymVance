@@ -10,7 +10,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import MenuSerie from '../components/MenuSerie';
 import { useDialogo } from '../components/Dialogo';
 import { saveWorkoutHistory, nomeExercicio, getActiveSession, saveActiveSession, clearActiveSession } from '../services/storage';
-import { TIPO_PADRAO, criarSerie, tipoDe, numeroNormalDaSerie, rotuloDaSerie, normalizarSeries } from '../services/series';
+import { TIPO_PADRAO, criarSerie, tipoDe, numeroNormalDaSerie, rotuloDaSerie, normalizarSeries, gerarIdSerie } from '../services/series';
 import { useIdioma } from '../services/idioma';
 
 const COLORS = {
@@ -62,6 +62,7 @@ export default function SessaoAtiva({ navigation, route }) {
   const seriesRef = useRef([]);
   const tituloRef = useRef('');
   const exerciciosRef = useRef([]);
+  const descartando = useRef(false);
 
   useEffect(() => {
     seriesRef.current = series;
@@ -99,21 +100,10 @@ export default function SessaoAtiva({ navigation, route }) {
         tempo: msParaTempo(acumuladoMs.current + decorrido),
         acumuladoMs: acumuladoMs.current,
         inicioPeriodo: inicioPeriodo.current,
-        proximoId: proximoId.current,
       });
     } catch (error) {
       console.warn('Erro ao salvar sessão em andamento:', error);
     }
-  };
-
-  const aumentarIds = (lista) => {
-    let maxId = -1;
-    for (const s of lista) {
-      if (typeof s.id === 'number' && s.id > maxId) {
-        maxId = s.id;
-      }
-    }
-    proximoId.current = maxId + 1;
   };
 
   useEffect(() => {
@@ -127,14 +117,21 @@ export default function SessaoAtiva({ navigation, route }) {
         await clearActiveSession();
         const seriesIniciais = [];
         const exerciciosIniciais = [];
-        let idCounter = 0;
         (route.params.exercicios || []).forEach((ex, exIdx) => {
           const nomeEx = nomeExercicio(ex, idioma);
-          exerciciosIniciais.push({ exercicioIdx: exIdx, nome: nomeEx });
+          // Preserva o ID original do exercício se existir
+          exerciciosIniciais.push({
+            id: ex.id,
+            exercicioIdx: exIdx,
+            nome: nomeEx,
+            grupoMuscular: ex.grupoMuscular,
+            equipamento: ex.equipamento,
+          });
           (normalizarSeries(ex.series)).forEach((s) => {
             seriesIniciais.push({
               ...s,
-              id: idCounter++,
+              // Preserva o ID original da série se for string, senão gera novo
+              id: typeof s.id === 'string' ? s.id : gerarIdSerie(),
               exercicioNome: nomeEx,
               exercicioIdx: exIdx,
             });
@@ -143,7 +140,6 @@ export default function SessaoAtiva({ navigation, route }) {
         if (!ativo) return;
         setSeries(seriesIniciais);
         setExerciciosSessao(exerciciosIniciais);
-        proximoId.current = idCounter;
         if (route?.params?.titulo) {
           setTituloSessao(String(route.params.titulo));
         }
@@ -180,9 +176,12 @@ export default function SessaoAtiva({ navigation, route }) {
     if (!sessaoSalva) {
       return;
     }
-    const lista = normalizarSeries(sessaoSalva.series);
+    const lista = normalizarSeries(sessaoSalva.series).map((s) => ({
+      ...s,
+      // Garante ID string estável
+      id: typeof s.id === 'string' ? s.id : gerarIdSerie(),
+    }));
     setSeries(lista);
-    aumentarIds(lista);
 
     // Sessões antigas não tinham `exercicios`: deriva dos próprios séries.
     let exercicios = Array.isArray(sessaoSalva.exercicios) ? sessaoSalva.exercicios : [];
@@ -207,6 +206,7 @@ export default function SessaoAtiva({ navigation, route }) {
   };
 
   const comecarNovo = async () => {
+    descartando.current = false;
     canPersistir.current = false;
     await clearActiveSession();
     setSeries([]);
@@ -249,7 +249,9 @@ export default function SessaoAtiva({ navigation, route }) {
         inicioPeriodo.current = null;
       }
       atualizar();
-      persistirSessao();
+      if (!descartando.current) {
+        persistirSessao();
+      }
     };
 
     const iniciar = () => {
@@ -314,7 +316,7 @@ export default function SessaoAtiva({ navigation, route }) {
     setSeries((prev) => [
       ...prev,
       {
-        ...criarSerie(TIPO_PADRAO, proximoId.current++),
+        ...criarSerie(TIPO_PADRAO, gerarIdSerie()),
         exercicioNome: meta.nome,
         exercicioIdx: meta.exercicioIdx,
       },
@@ -360,9 +362,14 @@ export default function SessaoAtiva({ navigation, route }) {
       for (const s of series) {
         const idx = s.exercicioIdx ?? 0;
         if (!exerciciosMap.has(idx)) {
+          // Busca metadados completos do exercício em exerciciosSessao
+          const meta = exerciciosSessao.find((e) => e.exercicioIdx === idx);
           exerciciosMap.set(idx, {
+            id: meta?.id,
             exercicioIdx: idx,
-            nome: s.exercicioNome || '',
+            nome: meta?.nome || s.exercicioNome || '',
+            grupoMuscular: meta?.grupoMuscular,
+            equipamento: meta?.equipamento,
             series: [],
           });
         }
@@ -411,6 +418,7 @@ export default function SessaoAtiva({ navigation, route }) {
       rotuloCancelar: t('sessaoAtiva.cancelar'),
       destrutivo: true,
       onConfirmar: async () => {
+        descartando.current = true;
         canPersistir.current = false;
         await clearActiveSession();
         navigation?.goBack();
@@ -420,8 +428,9 @@ export default function SessaoAtiva({ navigation, route }) {
 
   const handleVoltar = () => {
     if (series.length === 0) {
+      descartando.current = true;
       canPersistir.current = false;
-      clearActiveSession();
+      await clearActiveSession();
       navigation?.goBack();
       return;
     }

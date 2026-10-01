@@ -83,3 +83,50 @@ export function normalizarSeries(series) {
     };
   });
 }
+
+// Compatibilidade com exercícios antigos: garante estrutura mínima,
+// id estável e campos essenciais, sem apagar nem inventar dados.
+export function normalizarExercicio(exercicio) {
+  if (!exercicio || typeof exercicio !== 'object') {
+    return null;
+  }
+  
+  const base = { ...exercicio };
+  
+  // Garante ID estável
+  if (!base.id) {
+    base.id = `ex-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+  
+  // Garante exercicioIdx/ordem para compatibilidade
+  if (base.exercicioIdx === undefined && base.ordem === undefined) {
+    base.exercicioIdx = 0;
+  }
+  
+  // Garante nome
+  if (!base.nome && !base.exercicioNome) {
+    base.nome = '';
+  }
+  
+  // Preserva grupoMuscular e equipamento se existirem (não inventa)
+  // Não adiciona campos que não existiam
+  
+  // Garante series normalizadas
+  if (base.series) {
+    base.series = normalizarSeries(base.series);
+  } else {
+    base.series = [];
+  }
+  
+  return base;
+}
+
+// Normaliza array de exercícios
+export function normalizarExercicios(exercicios) {
+  if (!Array.isArray(exercicios)) {
+    return [];
+  }
+  return exercicios
+    .map(normalizarExercicio)
+    .filter(Boolean);
+}
